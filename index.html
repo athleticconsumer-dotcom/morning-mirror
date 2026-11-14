@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning Mirror</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&family=Noto+Serif+JP:wght@500&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#07061a; --night2:#0e0c2b; --indigo:#2b20b8; --indigo2:#1c1580; --violet:#5a48ff;
+  --lav:#8f86ff; --gold:#e7c44a; --gold2:#c9a52c; --paper:#f7f6ff; --ink:#15123d; --ink2:#4a4775;
+  --slate:#6b7393; --red:#e0475b; --green:#2fb36d; --line:#d9d6f5;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:Montserrat,system-ui,sans-serif;color:var(--ink);min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #2a1f9e55, transparent 60%),
+    radial-gradient(900px 500px at -10% 40%, #3b2bd033, transparent 60%),
+    linear-gradient(180deg,var(--night) 0%, var(--night2) 100%);
+  background-attachment:fixed;
+}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(1px 1px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 72% 8%,#fff6,transparent),
+  radial-gradient(1px 1px at 40% 60%,#fff5,transparent),radial-gradient(1.5px 1.5px at 88% 52%,#fff7,transparent),
+  radial-gradient(1px 1px at 22% 84%,#fff5,transparent),radial-gradient(1px 1px at 60% 92%,#fff6,transparent);}
+.app{max-width:540px;margin:0 auto;padding:0 14px 110px;position:relative}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:18px 4px 10px;color:#fff}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .kanji{font-family:"Noto Serif JP",serif;font-size:26px;color:var(--gold);line-height:1}
+.brand .name{font-weight:900;letter-spacing:.18em;font-size:14px}
+.brand .sub{font-size:10px;letter-spacing:.32em;color:var(--lav);margin-top:3px}
+.sync{font-size:10.5px;color:#b9b4ff;text-align:right;max-width:46%}
+.sync b{color:var(--gold)}
+
+/* section banner */
+.banner{background:linear-gradient(180deg,var(--indigo),var(--indigo2));color:#fff;text-align:center;border-radius:18px;
+  padding:14px 10px;margin:16px 0 12px;font-weight:900;letter-spacing:.06em;font-size:17px;box-shadow:0 8px 30px #2b20b855;border:1px solid #ffffff1a}
+
+/* paper card */
+.paper{background:var(--paper);border-radius:16px;padding:20px 18px 18px 30px;margin:12px 0;position:relative;
+  box-shadow:0 14px 40px #0008, inset 0 0 0 1px #fff;overflow:hidden}
+.paper:after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(500px 300px at 110% -10%, #5a48ff12, transparent 60%)}
+.paper .vert{position:absolute;left:9px;top:18px;writing-mode:vertical-rl;font-family:"Noto Serif JP",serif;font-size:13px;color:var(--indigo);letter-spacing:.25em}
+.paper .vert.r{left:auto;right:8px;top:auto;bottom:16px}
+.label{display:flex;align-items:center;gap:10px;color:var(--indigo);font-size:9.5px;letter-spacing:.42em;font-weight:600;margin-bottom:6px}
+.label:before,.label:after{content:"";height:1px;background:var(--indigo);opacity:.55;flex:1}
+.spark{width:18px;height:18px;fill:var(--indigo);flex:none}
+.title{font-weight:900;color:var(--indigo);font-size:26px;letter-spacing:-.01em;text-transform:uppercase;margin:4px 0 8px;line-height:1.05}
+.title.sm{font-size:19px}
+.lead{font-style:italic;font-size:14px;line-height:1.55;color:var(--ink)}
+.lead b{font-style:italic;font-weight:800}
+.muted{color:var(--ink2);font-size:12.5px;line-height:1.5}
+.knot{display:flex;align-items:center;gap:10px;margin-top:14px;opacity:.7}
+.knot:before,.knot:after{content:"";height:1px;background:var(--indigo);flex:1}
+
+/* stat row */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.stat{background:linear-gradient(180deg,#221a8f,#15106a);color:#fff;border-radius:14px;padding:10px 8px;text-align:center;border:1px solid #ffffff14}
+.stat .v{font-family:Oswald,sans-serif;font-size:20px;font-weight:600}
+.stat .k{font-size:9px;letter-spacing:.14em;color:#c5c0ff;text-transform:uppercase;margin-top:2px}
+.stat .v.up{color:#ff8b98}.stat .v.down{color:#7fe3aa}
+
+/* pill bars (like lesson bars) */
+.pill{display:flex;gap:10px;align-items:stretch;margin:8px 0}
+.pill .n{width:34px;border-radius:10px;background:#8e95ad;color:#fff;font-family:Oswald;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+.pill .b{flex:1;border-radius:12px;padding:9px 12px;color:#fff;font-size:12.5px;line-height:1.4}
+.pill .b b{font-weight:800}
+.c1{background:var(--violet)}.c2{background:#6f7591}.c3{background:var(--gold);color:var(--ink)!important}.c4{background:#0d0b22}
+.c5{background:#3f4fd6}.c6{background:#1c1a5c}.c7{background:#7b5cff}
+
+/* verdict */
+.verdict{border-radius:14px;padding:14px;color:#fff;margin-top:10px}
+.verdict h3{margin:0 0 4px;font-size:15px;font-weight:900;letter-spacing:.02em;text-transform:uppercase}
+.verdict p{margin:0;font-size:13px;line-height:1.5}
+.v-good{background:linear-gradient(135deg,#1f8f5a,#2fb36d)}
+.v-wait{background:linear-gradient(135deg,#a7871a,var(--gold));color:var(--ink)}
+.v-warn{background:linear-gradient(135deg,#a82d40,var(--red))}
+.v-info{background:linear-gradient(135deg,var(--indigo2),var(--violet))}
+
+/* form */
+.field{margin:14px 0}
+.field > .fl{font-size:10px;letter-spacing:.3em;font-weight:700;color:var(--indigo);text-transform:uppercase;margin-bottom:7px;display:block}
+input[type=number],input[type=text],input[type=date],select,textarea{
+  width:100%;font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--violet)}
+textarea{min-height:64px;resize:vertical;font-size:14px}
+.weightbox{display:flex;align-items:center;gap:8px}
+.weightbox input{font-family:Oswald;font-size:30px;font-weight:600;text-align:center;padding:8px}
+.weightbox .u{font-weight:800;color:var(--indigo)}
+.stepbtn{width:46px;height:52px;border-radius:12px;border:none;background:#ece9ff;color:var(--indigo);font-size:22px;font-weight:800}
+
+.photo{border:2px dashed #b8b2f5;border-radius:16px;min-height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:6px;color:var(--indigo);background:#efedff;cursor:pointer;position:relative;overflow:hidden;text-align:center}
+.photo img{width:100%;max-height:420px;object-fit:cover;display:block}
+.photo .ph-ic{font-size:34px}
+.photo .ph-t{font-weight:800;font-size:14px}
+.photo .ph-s{font-size:11.5px;color:var(--ink2);padding:0 18px}
+.photo .retake{position:absolute;right:10px;bottom:10px;background:#000a;color:#fff;font-size:12px;font-weight:700;padding:7px 11px;border-radius:999px}
+.photo.busy:after{content:"Processing…";position:absolute;inset:0;background:#fffc;display:flex;align-items:center;justify-content:center;font-weight:800}
+input[type=file]{display:none}
+
+.sig{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 10px;margin:6px 0}
+.sig .nm{font-size:13px;font-weight:700}
+.seg{display:flex;background:#ece9ff;border-radius:10px;padding:3px;gap:3px}
+.seg button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:700;color:var(--ink2);padding:7px 10px;border-radius:8px;min-width:46px}
+.seg button.on.g{background:var(--green);color:#fff}
+.seg button.on.n{background:#6f7591;color:#fff}
+.seg button.on.b{background:var(--red);color:#fff}
+.sigscore{font-size:12px;font-weight:800;margin-top:6px}
+
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#fff;border:1.5px solid var(--line);margin:6px 0;cursor:pointer}
+.check .bx{width:22px;height:22px;border-radius:7px;border:2px solid var(--violet);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px}
+.check.on{border-color:var(--violet);background:#f0eeff}
+.check.on .bx{background:var(--violet)}
+.check .ct{font-size:13.5px;font-weight:700}
+.check .cd{font-size:11.5px;color:var(--ink2);margin-top:2px}
+.check.dis{opacity:.45}
+
+.btn{display:block;width:100%;border:none;border-radius:14px;padding:15px;font:inherit;font-weight:900;font-size:15px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.btn.gold{background:linear-gradient(180deg,#f2d461,var(--gold2));color:var(--ink);box-shadow:0 8px 24px #e7c44a40}
+.btn.ind{background:linear-gradient(180deg,var(--violet),var(--indigo));color:#fff}
+.btn.ghost{background:#ece9ff;color:var(--indigo)}
+.btn.red{background:#fde6e9;color:var(--red)}
+.btn + .btn{margin-top:8px}
+.row{display:flex;gap:8px}.row > *{flex:1}
+
+.datebar{display:flex;align-items:center;justify-content:space-between;color:#fff;margin:6px 0 2px}
+.datebar button{background:#ffffff14;border:1px solid #ffffff22;color:#fff;width:42px;height:42px;border-radius:12px;font-size:18px}
+.datebar button:disabled{opacity:.3}
+.datebar .d{text-align:center}
+.datebar .d1{font-weight:900;font-size:16px;letter-spacing:.04em}
+.datebar .d2{font-size:11px;color:var(--lav);letter-spacing:.2em;text-transform:uppercase;margin-top:2px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font:inherit;font-size:12px;font-weight:700;color:var(--ink2)}
+.chip.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+
+.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--ink2);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gal .g{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:#e6e3ff}
+.gal .g img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .g span{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,#000b);color:#fff;font-size:10px;font-weight:700;padding:14px 6px 5px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.cmp .side{text-align:center}
+.cmp img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#e6e3ff;display:block}
+.cmp .cap{font-size:11.5px;font-weight:700;margin-top:5px}
+
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--indigo);padding:7px 6px;text-align:left}
+table.t th:first-child{border-radius:8px 0 0 8px}table.t th:last-child{border-radius:0 8px 8px 0}
+table.t td{padding:8px 6px;border-bottom:1px solid var(--line)}
+table.t td.num{font-family:Oswald;font-weight:500;text-align:right}
+table.t th.num{text-align:right}
+td .mp{display:inline-block;min-width:24px;text-align:center;border-radius:5px;padding:1px 4px;font-family:Oswald;font-size:12px}
+.mp.p{background:#3f4fd6;color:#fff}.mp.c{background:var(--gold);color:var(--ink)}.mp.f{background:#6f7591;color:#fff}
+tr.food{cursor:pointer}
+tr.food.sel td{background:#f0eeff}
+.fnote{font-size:11px;color:var(--ink2)}
+.calc{background:#fff;border:1.5px solid var(--violet);border-radius:14px;padding:12px;margin:10px 0}
+.calc .res{display:flex;gap:6px;margin-top:10px}
+.calc .res div{flex:1;text-align:center;border-radius:10px;padding:8px 4px;color:#fff;font-family:Oswald;font-size:18px}
+.calc .res small{display:block;font-family:Montserrat;font-size:9px;letter-spacing:.12em;opacity:.85}
+
+.timeline{display:flex;gap:4px;margin:10px 0}
+.timeline div{flex:1;height:8px;border-radius:4px;background:#dcd8ff}
+.timeline div.on{background:var(--violet)}
+.timeline div.now{background:var(--gold)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,transparent,#07061aee 30%)}
+nav.tabs .in{display:flex;gap:4px;background:linear-gradient(180deg,#2b20b8,#1c1580);border-radius:20px;padding:6px;width:100%;max-width:520px;border:1px solid #ffffff22;box-shadow:0 10px 30px #000a}
+nav.tabs button{flex:1;border:none;background:transparent;color:#bdb7ff;font:inherit;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:8px 2px 6px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav.tabs button.on{background:#ffffff1c;color:var(--gold)}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--gold);color:var(--ink);font-weight:800;font-size:13px;
+  padding:11px 18px;border-radius:999px;opacity:0;transition:.25s;z-index:50;pointer-events:none;box-shadow:0 8px 24px #0008;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.viewer{position:fixed;inset:0;background:#000e;z-index:60;display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px}
+.viewer.show{display:flex}
+.viewer img{max-width:100%;max-height:80vh;border-radius:12px}
+.viewer .vc{color:#fff;font-weight:700;margin-top:10px;font-size:13px}
+.hide{display:none!important}
+.warnline{background:#fff4d1;color:#6b5205;border-radius:10px;padding:9px 11px;font-size:12px;line-height:1.45;margin:8px 0}
+.empty{text-align:center;color:var(--ink2);font-size:13px;padding:18px 6px}
+.tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:6px;padding:2px 6px;background:#ece9ff;color:var(--indigo)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="kanji">鏡</div>
+      <div><div class="name">MORNING MIRROR</div><div class="sub">PHYSIQUE SYSTEM</div></div>
+    </div>
+    <div style="text-align:right"><div class="sync" id="sync" style="max-width:none">Saved on this device</div><button id="authBtn" class="hide" style="margin-top:6px;background:var(--gold);color:var(--ink);border:none;border-radius:999px;padding:7px 12px;font:inherit;font-size:11px;font-weight:800"></button></div>
+  </header>
+
+  <main id="view"></main>
+</div>
+
+<nav class="tabs"><div class="in">
+  <button data-tab="today" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</button>
+  <button data-tab="progress"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/></svg>Progress</button>
+  <button data-tab="plan"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Plan</button>
+  <button data-tab="food"><svg viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8M7 7h4"/><path d="M16 3c-2 2-2 6 0 8v10"/></svg>Food</button>
+</div></nav>
+
+<input type="file" id="photoInput" accept="image/*" capture="user">
+<div class="toast" id="toast"></div>
+<div class="viewer" id="viewer"><img id="viewerImg" alt=""><div class="vc" id="viewerCap"></div></div>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+/* ============ constants ============ */
+const SPARK = '<svg class="spark" viewBox="0 0 24 24"><path d="M12 0C13 9 15 11 24 12C15 13 13 15 12 24C11 15 9 13 0 12C9 11 11 9 12 0Z"/></svg>';
+const KNOT = '<div class="knot"><svg width="56" height="22" viewBox="0 0 56 22" fill="none" stroke="#2b20b8" stroke-width="1.4"><ellipse cx="18" cy="11" rx="12" ry="7"/><ellipse cx="38" cy="11" rx="12" ry="7"/><ellipse cx="28" cy="11" rx="7" ry="9"/></svg></div>';
+
+const ACTIONS = [
+  {id:'steps',  t:'+2,000 steps a day',         d:'Everyday movement burns more than you think and costs nothing to recover from.'},
+  {id:'protein',t:'Protein in every meal',      d:'A palm-sized portion: meat, fish, eggs, skyr, legumes.'},
+  {id:'drinks', t:'No liquid calories',         d:'Water, coffee, tea, zero drinks.'},
+  {id:'snack',  t:'Drop one snack a day',       d:'Pick the one you would miss least.'},
+  {id:'dinner', t:'Smaller evening portion',    d:'About 150 kcal less, e.g. a third less rice or pasta.'},
+  {id:'veg',    t:'Veg or fruit with 2 meals',  d:'Volume and fibre for very few calories.'},
+  {id:'cutoff', t:'Kitchen closes at a set time',d:'For example nothing after 21:00.'},
+  {id:'track',  t:'Track food 5 days a week',   d:'Awareness, not perfection.'},
+  {id:'cook',   t:'Max 2 takeaways a week',     d:'Cook the rest at home.'},
+  {id:'sleep',  t:'Fixed bedtime',              d:'Sleep drives hunger, mood and recovery.'}
+];
+const SIGNALS = [
+  {k:'sleep', t:'Sleep quality', good:'high'},
+  {k:'energy',t:'Energy',        good:'high'},
+  {k:'mood',  t:'Mood',          good:'high'},
+  {k:'perf',  t:'Training feel', good:'high'},
+  {k:'hunger',t:'Hunger',        good:'low'},
+  {k:'water', t:'Puffy / bloated',good:'low'}
+];
+const RULES = [
+  ['c1','Small beats brutal.','A deficit you can hold for months wins. Start with 2 actions, max 3.'],
+  ['c2','Move all day.','Steps and everyday movement add up and need no recovery.'],
+  ['c3','Keep carbs and protein.','Carbs fuel training, protein keeps your muscle.'],
+  ['c4','Stuck and tired? Don\'t cut more.','A flat scale with high fatigue is usually water, not a plateau.'],
+  ['c5','The scale swings daily.','Trust the 5-day average and your photos, not one morning.'],
+  ['c6','Health first.','Sleep, mood and your relationship with food come before numbers.'],
+  ['c7','Wait 3 weeks.','Give a method 21 days before changing the whole system.']
+];
+// per 100 g: name, kcal, protein, carbs, fat, note
+const FOODS = {
+  'Carbs':[
+    ['Rice, raw',360,7,79,0.7,'Cheap, easy to digest'],['Rice, cooked',130,2.7,28,0.3,''],['Pasta, raw',355,12.5,72,1.5,''],
+    ['Potatoes, boiled',87,1.9,20,0.1,'Very filling per calorie'],['Sweet potato, baked',90,2,21,0.2,''],['Oats',380,13,60,7,'Fibre, slow energy'],
+    ['Wholegrain bread',250,10,41,3.5,''],['Couscous, raw',376,13,77,0.6,''],['Banana',89,1.1,23,0.3,'Pre-training classic'],
+    ['Apple',52,0.3,14,0.2,''],['Berries',50,0.7,12,0.3,'Low kcal, high volume'],['Kiwi',61,1.1,15,0.5,''],
+    ['Dates',282,2.5,75,0.4,'Fast carbs'],['Honey',304,0.3,82,0,'']
+  ],
+  'Protein':[
+    ['Chicken breast, raw',110,23,0,1.5,'Lean staple'],['Turkey breast, raw',104,24,0,1,''],['Beef 5% fat, raw',125,21,0,5,'Iron, zinc'],
+    ['Eggs',143,12.6,0.7,9.5,'~60 g per egg'],['Greek yogurt 0%',59,10,3.6,0.4,''],['Skyr',63,11,4,0.2,''],
+    ['Cottage cheese',98,11,3.4,4.3,''],['Tuna in water',116,26,0,1,''],['Salmon, raw',208,20,0,13,'Omega-3'],
+    ['Cod / white fish',82,18,0,0.7,'Very lean'],['Lentils, cooked',116,9,20,0.4,'Plus fibre'],['Chickpeas, cooked',164,8.9,27,2.6,''],
+    ['Whey protein',380,78,8,5,'Varies by brand']
+  ],
+  'Fats':[
+    ['Olive oil',884,0,0,100,'1 tbsp ≈ 120 kcal'],['Butter',717,0.9,0.1,81,''],['Almonds',579,21,22,50,''],
+    ['Walnuts',654,15,14,65,''],['Peanut butter',588,25,20,50,'Easy to over-pour'],['Avocado',160,2,9,15,''],
+    ['Dark chocolate 85%',600,10,30,46,''],['Parmesan',431,38,4,29,'Strong taste, use less'],['Gouda',356,25,2,27,'']
+  ],
+  'Extras':[
+    ['Milk 1.5%',47,3.4,4.8,1.5,''],['Coffee, black',2,0.1,0,0,''],['Coconut water',19,0.7,3.7,0.2,''],
+    ['Soy sauce',53,8,5,0.6,'Salty: water weight next day'],['Ketchup',112,1.2,26,0.1,''],['Hummus',166,8,14,10,''],
+    ['Mixed vegetables',30,2,5,0.3,'Eat freely']
+  ]
+};
+
+/* ============ helpers ============ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayISO = () => iso(new Date());
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const addDays = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d); };
+const diffDays = (a,b) => Math.round((parse(b)-parse(a))/86400000);
+const fmtDate = (s,opt) => parse(s).toLocaleDateString('en-GB', opt || {weekday:'short', day:'numeric', month:'short'});
+const r1 = x => (Math.round(x*10)/10).toFixed(1);
+const clone = o => JSON.parse(JSON.stringify(o));
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2200); }
+function card(inner, opts={}){
+  return `<section class="paper">${opts.vert?`<div class="vert">${opts.vert}</div>`:''}${opts.vertR?`<div class="vert r">${opts.vertR}</div>`:''}
+  <div class="label">${opts.label||'M O R N I N G &nbsp; M I R R O R'}</div>${inner}</section>`;
+}
+
+/* ============ state & storage ============ */
+let profile = null;            // {startDate, goal, actions:[], actionsSince, custom:[], log:[]}
+let days = {};                 // date -> entry
+let mode = 'local';            // 'local' | 'db'
+let col = null, assets = null;
+let tab = 'today', viewDate = todayISO(), draft = null, dirty = false;
+let picks = null, foodCat = 'Carbs', foodQ = '', foodSel = null, grams = 100, range = 30, cmpA = null, cmpB = null;
+let onboardGoal = 'cut', confirmReset = false, migrated = false;
+
+function loadLocal(){
+  try { const o = JSON.parse(localStorage.getItem('mm_v1') || 'null'); if(o){ profile=o.profile||null; days=o.days||{}; } } catch(e){}
+}
+function saveLocal(){
+  if(mode!=='local') return;
+  try { localStorage.setItem('mm_v1', JSON.stringify({profile, days})); }
+  catch(e){ toast('Device storage is full'); }
+}
+const chains = {};
+function writeDoc(id, data){
+  if(mode!=='db'){ saveLocal(); return Promise.resolve(); }
+  chains[id] = (chains[id]||Promise.resolve()).then(()=>col.doc(id).set(data)).catch(e=>{
+    if(e && e.code==='unavailable') return new Promise(r=>setTimeout(r,800+Math.random()*800)).then(()=>col.doc(id).set(data));
+    throw e;
+  }).catch(e=>{ toast(e && e.code==='quota_exceeded' ? 'Storage full: delete old photos' : 'Could not save, try again'); });
+  return chains[id];
+}
+const saveProfile = () => writeDoc('profile', profile);
+const saveDay = rec => writeDoc('d-'+rec.date, rec);
+function setSync(html){ $('#sync').innerHTML = html; }
+
+let fb = null, uid = null, unsub = null;
+async function connect(){
+  if(!firebaseConfig || !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('PASTE')){ setSync('Saved on this device<br><small>Firebase not set up yet</small>'); return; }
+  try{
+    const V = '10.12.2';
+    const app = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+    const auth = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+    const fs = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+    const a = app.initializeApp(firebaseConfig);
+    const db = fs.initializeFirestore(a, {localCache: fs.persistentLocalCache()});
+    const au = auth.getAuth(a);
+    fb = {auth, fs, db, au};
+    const btn = $('#authBtn'); btn.classList.remove('hide');
+    btn.onclick = async ()=>{
+      if(uid){ await auth.signOut(au); return; }
+      const prov = new auth.GoogleAuthProvider();
+      try{ await auth.signInWithPopup(au, prov); }
+      catch(e){ if(e && e.code==='auth/popup-blocked') auth.signInWithRedirect(au, prov); else toast('Sign-in failed'); }
+    };
+    auth.getRedirectResult(au).catch(()=>{});
+    auth.onAuthStateChanged(au, user=>{
+      if(unsub){ unsub(); unsub=null; }
+      if(!user){
+        uid=null; mode='local'; col=null; loadLocal();
+        btn.textContent='Sign in with Google'; setSync('Not signed in<br><small>saved on this device only</small>'); render(); return;
+      }
+      uid=user.uid; btn.textContent='Sign out';
+      subscribe();
+    });
+  }catch(e){ setSync('Saved on this device<br><small>cloud unavailable</small>'); }
+}
+function subscribe(){
+  const {fs, db} = fb;
+  const hadLocal = !!profile || Object.keys(days).length>0;
+  const local = {profile: clone(profile), days: clone(days)};
+  const ref = fs.collection(db, 'users', uid, 'entries');
+  col = { doc: id => ({
+    set: data => fs.setDoc(fs.doc(ref, id), JSON.parse(JSON.stringify(data))),
+    delete: () => fs.deleteDoc(fs.doc(ref, id))
+  })};
+  mode='db'; setSync('Syncing…');
+  const timer = setTimeout(()=>setSync('Offline<br><small>showing last copy</small>'), 10000);
+  unsub = fs.onSnapshot(ref, {includeMetadataChanges:true}, snap=>{
+    if(!snap.metadata.fromCache){ clearTimeout(timer); setSync('<b>●</b> Synced · private'); }
+    if(!snap.metadata.fromCache && snap.empty && hadLocal && !migrated){
+      migrated=true; profile=local.profile; days=local.days;
+      if(profile) saveProfile(); Object.values(days).forEach(saveDay); render(); return;
+    }
+    let np=null; const d={};
+    snap.docs.forEach(doc=>{ const v=doc.data(); if(doc.id==='profile') np=v; else if(doc.id.startsWith('d-') && v.date) d[v.date]=v; });
+    profile=np; days=d; render(true);
+  }, err=>{ clearTimeout(timer); setSync('Sync error<br><small>'+esc(err.code||'')+'</small>'); });
+}
+
+/* ============ analysis ============ */
+function weighins(upTo){
+  return Object.values(days).filter(e=>e.weight && !e.excused && e.date<=upTo).sort((a,b)=>a.date<b.date?-1:1);
+}
+function avg5(at){
+  const list = weighins(at).filter(e=>diffDays(e.date,at)<10).slice(-5);
+  if(list.length<3) return null;
+  return list.reduce((s,e)=>s+e.weight,0)/list.length;
+}
+function sigScore(e){
+  if(!e || !e.signals) return null;
+  let s=0, n=0;
+  SIGNALS.forEach(g=>{ const v=e.signals[g.k]; if(v===undefined||v===null) return; n++; s += g.good==='high' ? v : -v; });
+  return n ? s : null;
+}
+function recentSig(at){
+  const list = Object.values(days).filter(e=>e.date<=at && diffDays(e.date,at)<7).map(sigScore).filter(v=>v!==null);
+  if(list.length<3) return null;
+  return list.slice(-5).reduce((a,b)=>a+b,0)/Math.min(5,list.length);
+}
+function actionList(){ return ACTIONS.concat((profile&&profile.custom)||[]); }
+function analyze(){
+  const t = todayISO();
+  if(!profile) return null;
+  const n = diffDays(profile.startDate, t) + 1;
+  const a = avg5(t), b = avg5(addDays(t,-7));
+  const count = weighins(t).length;
+  const wk = (a!==null && b!==null && count>=8) ? a-b : null;
+  const pct = wk!==null ? wk/b*100 : null;
+  const rs = recentSig(t);
+  const dsc = profile.actionsSince ? diffDays(profile.actionsSince, t) : null;
+  const goal = profile.goal;
+  let v;
+  if(n<=7) v = {tone:'info', h:`Setup week · Day ${Math.max(n,1)}/7`, p:'Change nothing yet. Weigh in every morning after the bathroom, before eating or drinking, and take your photo in the same spot and light. This week shows your real starting point.'};
+  else if(!profile.actions || !profile.actions.length) v = {tone:'info', h:'Day 8: choose your actions', p:'Your baseline is in. Pick 2 actions (3 max) in the Plan tab. Small and sustainable beats brutal.', go:'plan'};
+  else if(rs!==null && rs<=-2.5) v = {tone:'warn', h:'Health comes first', p:'Your signals have been low for several days. Pause the deficit, eat at maintenance for a few days and put sleep first. If it keeps going, talk to a doctor.'};
+  else if(pct===null) v = {tone:'info', h:'Collecting data', p:'The trend needs about 10 weigh-ins over 2 weeks. Keep logging every morning.'};
+  else if(goal==='cut'){
+    if(pct < -1.0) v = {tone:'warn', h:'Losing too fast', p:`${r1(pct)}% of bodyweight per week. Faster than about 1% costs muscle and energy. Add back roughly 150 kcal a day, ideally carbs around training.`};
+    else if(pct <= -0.25) v = {tone:'good', h:'On track', p:`${r1(wk)} kg/week (${r1(pct)}%). Keep everything exactly as it is.`};
+    else if(rs!==null && rs<=-1) v = {tone:'wait', h:'Stuck and tired? Likely water', p:'A flat scale with low energy is usually water retention, not a real plateau. Don\'t cut more. One or two days at maintenance with more carbs often unlocks it.'};
+    else if(dsc!==null && dsc<21) v = {tone:'wait', h:`Wait ${21-dsc} more day${21-dsc===1?'':'s'}`, p:`The trend is flat, but your actions are only ${dsc} days old. Give the system 3 weeks before changing it.`};
+    else v = {tone:'info', h:'Review unlocked', p:'3+ weeks with a flat trend and good signals. Add one action and keep the existing ones.', go:'plan'};
+  } else if(goal==='maintain'){
+    if(Math.abs(pct)<=0.3) v = {tone:'good', h:'Stable', p:`${r1(wk)} kg/week. Maintenance is working.`};
+    else v = {tone:'info', h: pct>0?'Drifting up':'Drifting down', p:`${r1(wk)} kg/week. Adjust by about 100 to 150 kcal a day ${pct>0?'less':'more'}.`};
+  } else {
+    if(pct > 0.5) v = {tone:'warn', h:'Gaining too fast', p:`${r1(pct)}% per week. Most of the extra is fat. Pull back about 150 kcal a day.`};
+    else if(pct >= 0.1) v = {tone:'good', h:'On track', p:`+${r1(wk)} kg/week. Slow and lean.`};
+    else if(dsc!==null && dsc<21) v = {tone:'wait', h:`Wait ${21-dsc} more days`, p:'No gain yet. Give it 3 weeks before changing.'};
+    else v = {tone:'info', h:'Review unlocked', p:'Weight is flat after 3 weeks. Add about 150 kcal a day.'};
+  }
+  return {n, a, wk, pct, rs, dsc, v, count};
+}
+
+/* ============ draft ============ */
+function loadDraft(){
+  const d = days[viewDate];
+  draft = d ? clone(d) : {date:viewDate, weight:null, signals:{}, steps:null, done:[], excused:false, note:''};
+  draft.signals = draft.signals || {}; draft.done = draft.done || [];
+  dirty = false;
+}
+function photoSrc(e){ return e && (e.photoId ? '/_blob/'+e.photoId : e.photoData) || null; }
+
+/* ============ views ============ */
+function render(fromSync){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  if(fromSync && tab==='today' && dirty) { renderTodayTopOnly(); return; }
+  if(tab==='today'){ if(!dirty) loadDraft(); $('#view').innerHTML = viewToday(); }
+  else if(tab==='progress') $('#view').innerHTML = viewProgress();
+  else if(tab==='plan') $('#view').innerHTML = viewPlan();
+  else $('#view').innerHTML = viewFood();
+}
+function renderTodayTopOnly(){ const el=$('#topStats'); if(el) el.innerHTML = topStats(); }
+
+function onboarding(){
+  return card(`
+    <div class="title">Start here</div>
+    <p class="lead">Every morning: <b>one photo</b> and <b>one weight</b>. The app turns them into a trend and tells you when to <b>act</b> and when to <b>wait</b>.</p>
+    <p class="lead">Week 1 you change nothing. On day 8 you choose <b>2 actions</b>. Then you give them <b>3 weeks</b>.</p>
+    <div class="field"><span class="fl">Your goal</span>
+      <div class="chips">${[['cut','Lose fat'],['maintain','Maintain'],['gain','Lean gain']].map(([k,t])=>`<button class="chip ${onboardGoal===k?'on':''}" data-act="ogoal" data-v="${k}">${t}</button>`).join('')}</div>
+    </div>
+    <div class="field"><span class="fl">Start date</span><input type="date" id="obDate" value="${todayISO()}" max="${todayISO()}"></div>
+    <button class="btn gold" data-act="start">Begin day 1</button>
+    ${KNOT}`, {vert:'始', vertR:'日日是好日'});
+}
+
+function topStats(){
+  const A = analyze(); if(!A) return '';
+  const last = weighins(todayISO()).slice(-1)[0];
+  const wkCls = A.wk===null?'':(A.wk>0.05?'up':(A.wk<-0.05?'down':''));
+  return `
+  <div class="stats">
+    <div class="stat"><div class="v">${A.n}</div><div class="k">Day</div></div>
+    <div class="stat"><div class="v">${last?r1(last.weight):'–'}</div><div class="k">Last kg</div></div>
+    <div class="stat"><div class="v">${A.a!==null?r1(A.a):'–'}</div><div class="k">5-day avg</div></div>
+    <div class="stat"><div class="v ${wkCls}">${A.wk!==null?(A.wk>0?'+':'')+r1(A.wk):'–'}</div><div class="k">kg / week</div></div>
+  </div>
+  <div class="verdict v-${A.v.tone}"><h3>${esc(A.v.h)}</h3><p>${esc(A.v.p)}</p>
+   ${A.v.go?`<div style="margin-top:10px"><button class="btn ghost" style="padding:10px" data-act="tab" data-v="${A.v.go}">Open plan</button></div>`:''}</div>`;
+}
+
+function viewToday(){
+  if(!profile) return `<div class="banner">MORNING CHECK-IN</div>` + onboarding() + rulesCard();
+  const t = todayISO(), src = photoSrc(draft), exists = !!days[viewDate];
+  const acts = actionList().filter(a=>(profile.actions||[]).includes(a.id));
+  const sc = sigScore(draft);
+  const scTxt = sc===null ? '' : sc>=2 ? `<span style="color:var(--green)">Signal +${sc}: body is happy</span>` : sc<=-2 ? `<span style="color:var(--red)">Signal ${sc}: fatigue, don't push the deficit</span>` : `<span style="color:var(--slate)">Signal ${sc>0?'+':''}${sc}: neutral</span>`;
+  return `
+  <div id="topStats">${topStats()}</div>
+  <div class="banner">MORNING CHECK-IN</div>
+  <div class="datebar">
+    <button data-act="day" data-v="-1">‹</button>
+    <div class="d"><div class="d1">${viewDate===t?'Today':esc(fmtDate(viewDate))}</div><div class="d2">${esc(fmtDate(viewDate,{weekday:'long',day:'numeric',month:'long'}))} · Day ${diffDays(profile.startDate,viewDate)+1}</div></div>
+    <button data-act="day" data-v="1" ${viewDate>=t?'disabled':''}>›</button>
+  </div>
+  ${card(`
+    <div class="title sm">${exists?'Logged':'Photo & weight'}</div>
+    <div class="photo" id="photoBox" data-act="photo">
+      ${src ? `<img src="${esc(src)}" alt="Morning photo"><span class="retake">Retake</span>`
+            : `<div class="ph-ic">📷</div><div class="ph-t">Take morning photo</div><div class="ph-s">Same spot, same light, same pose. Front, relaxed.</div>`}
+    </div>
+    <div class="field"><span class="fl">Weight · after bathroom, before food</span>
+      <div class="weightbox">
+        <button class="stepbtn" data-act="wstep" data-v="-0.1">−</button>
+        <input type="number" inputmode="decimal" step="0.1" id="wIn" placeholder="00.0" value="${draft.weight??''}">
+        <button class="stepbtn" data-act="wstep" data-v="0.1">+</button>
+        <span class="u">kg</span>
+      </div>
+    </div>
+  `, {vert:'朝'})}
+  ${card(`
+    <div class="title sm">Daily signals</div>
+    <p class="muted" style="margin-top:0">How does your body feel this morning compared to normal?</p>
+    ${SIGNALS.map(g=>{ const v=draft.signals[g.k];
+      const cls = val => val===0?'n':((g.good==='high')===(val===1)?'g':'b');
+      return `<div class="sig"><div class="nm">${g.t}</div><div class="seg">
+        ${[[-1,'Low'],[0,'OK'],[1,'High']].map(([val,l])=>`<button class="${v===val?'on '+cls(val):''}" data-act="sig" data-k="${g.k}" data-v="${val}">${l}</button>`).join('')}
+      </div></div>`;}).join('')}
+    <div class="sigscore" id="sigScore">${scTxt}</div>
+  `, {vert:'信号'})}
+  ${card(`
+    <div class="title sm">Actions</div>
+    ${acts.length ? acts.map(a=>`<div class="check ${draft.done.includes(a.id)?'on':''}" data-act="done" data-v="${a.id}"><div class="bx">${draft.done.includes(a.id)?'✓':''}</div><div><div class="ct">${esc(a.t)}</div></div></div>`).join('')
+      : `<p class="muted">${diffDays(profile.startDate,t)<7?'Setup week: no actions yet. Just observe.':'No actions chosen yet. Pick them in the Plan tab.'}</p>`}
+    <div class="field"><span class="fl">Steps yesterday (optional)</span><input type="number" inputmode="numeric" id="stepsIn" placeholder="e.g. 9500" value="${draft.steps??''}"></div>
+    <div class="check ${draft.excused?'on':''}" data-act="excused"><div class="bx">${draft.excused?'✓':''}</div><div><div class="ct">Excused day</div><div class="cd">Travel, illness, a celebration, a big salty meal. Weight is kept out of the trend.</div></div></div>
+    <div class="field"><span class="fl">Note</span><textarea id="noteIn" placeholder="Anything that explains today's number…">${esc(draft.note)}</textarea></div>
+    <button class="btn gold" data-act="save">${exists?'Update check-in':'Save check-in'}</button>
+  `, {vert:'行動'})}
+  `;
+}
+
+function rulesCard(){
+  return card(`<div class="title">The 7 rules</div>
+    ${RULES.map((r,i)=>`<div class="pill"><div class="n">${i+1}</div><div class="b ${r[0]}"><b>${esc(r[1])}</b> ${esc(r[2])}</div></div>`).join('')}
+    ${KNOT}`, {vert:'規則', vertR:'結果自然成'});
+}
+
+function chartSVG(){
+  const t = todayISO();
+  const startR = range==='all' ? (profile?profile.startDate:addDays(t,-30)) : addDays(t,-range+1);
+  const pts = Object.values(days).filter(e=>e.weight && e.date>=startR && e.date<=t).sort((a,b)=>a.date<b.date?-1:1);
+  if(pts.length<2) return `<div class="empty">Log at least 2 mornings to see your chart.</div>`;
+  const span = Math.max(1, diffDays(startR, t));
+  const avgs = [];
+  for(let i=0;i<=span;i++){ const d=addDays(startR,i); const a=avg5(d); if(a!==null && weighins(d).length) avgs.push([d,a]); }
+  const all = pts.map(p=>p.weight).concat(avgs.map(a=>a[1]));
+  let lo = Math.min(...all), hi = Math.max(...all); if(hi-lo<1){ const m=(hi+lo)/2; lo=m-0.5; hi=m+0.5; }
+  lo -= 0.3; hi += 0.3;
+  const W=340,H=190,L=34,R=8,T=10,B=24;
+  const x = d => L + (diffDays(startR,d)/span)*(W-L-R);
+  const y = w => T + (1-(w-lo)/(hi-lo))*(H-T-B);
+  let g = '';
+  for(let i=0;i<=4;i++){ const w = lo + (hi-lo)*i/4; g += `<line x1="${L}" x2="${W-R}" y1="${y(w)}" y2="${y(w)}" stroke="#e1defa"/><text x="${L-5}" y="${y(w)+3}" font-size="9" text-anchor="end" fill="#6b6894" font-family="Oswald">${r1(w)}</text>`; }
+  g += `<text x="${L}" y="${H-6}" font-size="9" fill="#6b6894">${esc(fmtDate(startR,{day:'numeric',month:'short'}))}</text><text x="${W-R}" y="${H-6}" font-size="9" text-anchor="end" fill="#6b6894">${esc(fmtDate(t,{day:'numeric',month:'short'}))}</text>`;
+  const line = avgs.map(a=>`${x(a[0]).toFixed(1)},${y(a[1]).toFixed(1)}`).join(' ');
+  const dots = pts.map(p=>`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="3" fill="${p.excused?'#fff':'#8f86ff'}" stroke="#5a48ff" stroke-width="${p.excused?1.5:0}"/>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}${avgs.length>1?`<polyline points="${line}" fill="none" stroke="#e7c44a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}</svg>
+    <div class="legend"><span><i style="background:#8f86ff"></i>Daily weight</span><span><i style="background:#e7c44a"></i>5-day average</span><span>○ excused</span></div>`;
+}
+
+function viewProgress(){
+  if(!profile) return `<div class="banner">PROGRESS</div>` + onboarding();
+  const photos = Object.values(days).filter(photoSrc).sort((a,b)=>a.date<b.date?1:-1);
+  if(photos.length && (!cmpA || !days[cmpA] || !photoSrc(days[cmpA]))) cmpA = photos[photos.length-1].date;
+  if(photos.length && (!cmpB || !days[cmpB] || !photoSrc(days[cmpB]))) cmpB = photos[0].date;
+  // weekly table
+  const weeks = []; const t = todayISO();
+  let ws = profile.startDate;
+  while(ws<=t){ const we = addDays(ws,6); const list = Object.values(days).filter(e=>e.weight && !e.excused && e.date>=ws && e.date<=we);
+    const s = Object.values(days).filter(e=>e.date>=ws && e.date<=we).map(sigScore).filter(v=>v!==null);
+    weeks.push({ws, n:list.length, avg:list.length?list.reduce((a,e)=>a+e.weight,0)/list.length:null, sig:s.length?s.reduce((a,b)=>a+b,0)/s.length:null}); ws = addDays(ws,7); }
+  const opt = sel => photos.map(p=>`<option value="${p.date}" ${p.date===sel?'selected':''}>${esc(fmtDate(p.date))}${p.weight?' · '+r1(p.weight)+' kg':''}</option>`).join('');
+  const A = cmpA && days[cmpA], Bd = cmpB && days[cmpB];
+  return `
+  <div class="banner">PROGRESS</div>
+  ${card(`<div class="title sm">Weight trend</div>
+    <div class="chips">${[[14,'14 days'],[30,'30 days'],[90,'90 days'],['all','All']].map(([k,l])=>`<button class="chip ${range===k?'on':''}" data-act="range" data-v="${k}">${l}</button>`).join('')}</div>
+    ${chartSVG()}
+    <p class="muted">Ignore single days. Your weight is water, food, glycogen and fat. The gold line is what counts.</p>`, {vert:'趨勢'})}
+  ${card(`<div class="title sm">Weekly averages</div>
+    <table class="t"><tr><th>Week</th><th class="num">Avg kg</th><th class="num">Change</th><th class="num">Signal</th></tr>
+    ${weeks.map((w,i)=>{ const prev = i?weeks[i-1].avg:null; const ch = (w.avg!==null && prev!==null) ? w.avg-prev : null;
+      return `<tr><td>W${i+1} <span class="fnote">${esc(fmtDate(w.ws,{day:'numeric',month:'short'}))}</span>${i===0?' <span class="tag">setup</span>':''}</td>
+      <td class="num">${w.avg!==null?r1(w.avg):'–'}</td><td class="num" style="color:${ch===null?'inherit':ch>0?'var(--red)':'var(--green)'}">${ch!==null?(ch>0?'+':'')+r1(ch):'–'}</td>
+      <td class="num">${w.sig!==null?(w.sig>0?'+':'')+r1(w.sig):'–'}</td></tr>`; }).reverse().join('')}
+    </table>`, {vert:'週'})}
+  ${card(`<div class="title sm">Compare</div>
+    ${photos.length<2 ? `<div class="empty">You need at least 2 photos to compare.</div>` : `
+    <div class="row"><select data-act="cmpA">${opt(cmpA)}</select><select data-act="cmpB">${opt(cmpB)}</select></div>
+    <div class="cmp">
+      <div class="side"><img src="${esc(photoSrc(A))}" alt=""><div class="cap">${esc(fmtDate(cmpA))}${A.weight?' · '+r1(A.weight)+' kg':''}</div></div>
+      <div class="side"><img src="${esc(photoSrc(Bd))}" alt=""><div class="cap">${esc(fmtDate(cmpB))}${Bd.weight?' · '+r1(Bd.weight)+' kg':''}</div></div>
+    </div>
+    <p class="muted">${diffDays(cmpA,cmpB)} days apart. The mirror shows changes the scale hides.</p>`}`, {vert:'鏡'})}
+  ${card(`<div class="title sm">Photo journal</div>
+    ${photos.length ? `<div class="gal">${photos.map(p=>`<div class="g" data-act="view" data-v="${p.date}"><img src="${esc(photoSrc(p))}" alt="" loading="lazy"><span>${esc(fmtDate(p.date,{day:'numeric',month:'short'}))}${p.weight?' · '+r1(p.weight):''}</span></div>`).join('')}</div>`
+      : `<div class="empty">Your morning photos will appear here.</div>`}`, {vert:'記録'})}
+  `;
+}
+
+function viewPlan(){
+  if(!profile) return `<div class="banner">THE PLAN</div>` + onboarding() + rulesCard();
+  const t = todayISO(), n = diffDays(profile.startDate,t)+1, A = analyze();
+  if(!picks) picks = [...(profile.actions||[])];
+  const dsc = A.dsc;
+  const changing = (profile.actions||[]).length && dsc!==null && dsc<21 && JSON.stringify([...picks].sort())!==JSON.stringify([...(profile.actions||[])].sort());
+  const tl = []; for(let i=1;i<=28;i++) tl.push(`<div class="${i===n?'now':(i<n?'on':'')}"></div>`);
+  const goalName = {cut:'Lose fat',maintain:'Maintain',gain:'Lean gain'}[profile.goal];
+  return `
+  <div class="banner">THE PLAN</div>
+  ${card(`<div class="title sm">Where you are</div>
+    <p class="lead">Day <b>${n}</b> · goal: <b>${goalName}</b> · started ${esc(fmtDate(profile.startDate,{day:'numeric',month:'long'}))}</p>
+    <div class="timeline">${tl.join('')}</div>
+    <div class="pill"><div class="n">1</div><div class="b c2"><b>Days 1–7 · Set-up.</b> Change nothing. Find your real baseline.</div></div>
+    <div class="pill"><div class="n">2</div><div class="b c1"><b>Day 8 · Choose 2 actions.</b> 3 maximum. Each one easy to keep.</div></div>
+    <div class="pill"><div class="n">3</div><div class="b c3"><b>3 weeks · Hold.</b> React to signals in days, change the system only after 21 days.</div></div>
+    <div class="pill"><div class="n">4</div><div class="b c6"><b>Review.</b> Flat trend and good signals? Add one action. Otherwise keep going.</div></div>
+    ${dsc!==null?`<p class="muted">Current actions running for <b>${dsc}</b> day${dsc===1?'':'s'}. ${dsc<21?`Next system review on <b>${esc(fmtDate(addDays(profile.actionsSince,21),{day:'numeric',month:'long'}))}</b>.`:'Review is open.'}</p>`:''}
+  `, {vert:'計画'})}
+  ${card(`<div class="title sm">Your actions <span class="tag">${picks.length}/3</span></div>
+    ${n<8 && !(profile.actions||[]).length ? `<div class="warnline">You're in the setup week. Best to choose on day 8, once your baseline is clear.</div>`:''}
+    ${actionList().map(a=>{ const on=picks.includes(a.id), dis=!on && picks.length>=3;
+      return `<div class="check ${on?'on':''} ${dis?'dis':''}" data-act="pick" data-v="${a.id}"><div class="bx">${on?'✓':''}</div><div><div class="ct">${esc(a.t)}</div>${a.d?`<div class="cd">${esc(a.d)}</div>`:''}</div></div>`; }).join('')}
+    <div class="row" style="margin-top:8px"><input type="text" id="customIn" placeholder="Your own action…"><button class="btn ghost" style="flex:0 0 90px;padding:10px" data-act="addCustom">Add</button></div>
+    ${changing?`<div class="warnline">Your current actions are only ${dsc} days old. Small tweaks are fine, but changing the whole system before 3 weeks means you never learn what worked.</div>`:''}
+    <button class="btn gold" style="margin-top:10px" data-act="savePicks">Save actions</button>
+  `, {vert:'選択'})}
+  ${rulesCard()}
+  ${card(`<div class="title sm">Settings & data</div>
+    <div class="field"><span class="fl">Goal</span>
+      <div class="chips">${[['cut','Lose fat'],['maintain','Maintain'],['gain','Lean gain']].map(([k,l])=>`<button class="chip ${profile.goal===k?'on':''}" data-act="goal" data-v="${k}">${l}</button>`).join('')}</div></div>
+    <p class="muted">${mode==='db'?'Signed in: your check-ins and photos are stored privately in your Firebase account. Only you can read them.':'Not signed in: saved on this device only. Sign in (top right) to sync privately.'} ${Object.keys(days).length} days logged.</p>
+    <button class="btn ghost" data-act="export">Copy data (JSON)</button>
+    ${confirmReset ? `<div class="warnline">This deletes your plan and every check-in. Photos can't be recovered.</div><div class="row"><button class="btn ghost" data-act="resetNo">Cancel</button><button class="btn red" data-act="resetYes">Delete all</button></div>`
+      : `<button class="btn red" data-act="reset">Reset everything</button>`}
+  `, {vert:'設定'})}
+  `;
+}
+
+function viewFood(){
+  const list = (foodQ ? Object.values(FOODS).flat() : FOODS[foodCat]).filter(f=>!foodQ || f[0].toLowerCase().includes(foodQ.toLowerCase()));
+  const sel = foodSel && Object.values(FOODS).flat().find(f=>f[0]===foodSel);
+  const k = grams/100;
+  return `
+  <div class="banner">FOOD GUIDE</div>
+  ${card(`<div class="title sm">Per 100 g</div>
+    <p class="muted" style="margin-top:0">Tap a food to calculate your portion. Values are typical averages; check the label for exact numbers.</p>
+    <input type="text" id="foodQ" placeholder="Search food…" value="${esc(foodQ)}">
+    <div class="chips" style="margin-top:10px">${Object.keys(FOODS).map(c=>`<button class="chip ${!foodQ&&foodCat===c?'on':''}" data-act="fcat" data-v="${c}">${c}</button>`).join('')}</div>
+    ${sel ? `<div class="calc"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:14px">${esc(sel[0])}</b>
+      <div style="display:flex;align-items:center;gap:6px;flex:0 0 120px"><input type="number" inputmode="numeric" id="gramsIn" value="${grams}" style="padding:7px;text-align:center"><b>g</b></div></div>
+      <div class="res" id="calcRes">${calcRes(sel,k)}</div></div>` : ''}
+    <table class="t"><tr><th>Food</th><th class="num">kcal</th><th class="num">P</th><th class="num">C</th><th class="num">F</th></tr>
+    ${list.map(f=>`<tr class="food ${foodSel===f[0]?'sel':''}" data-act="fsel" data-v="${esc(f[0])}"><td>${esc(f[0])}${f[5]?`<div class="fnote">${esc(f[5])}</div>`:''}</td><td class="num">${f[1]}</td>
+      <td class="num"><span class="mp p">${f[2]}</span></td><td class="num"><span class="mp c">${f[3]}</span></td><td class="num"><span class="mp f">${f[4]}</span></td></tr>`).join('')}
+    </table>`, {vert:'食'})}
+  `;
+}
+function calcRes(f,k){
+  return `<div style="background:var(--ink)">${Math.round(f[1]*k)}<small>KCAL</small></div><div style="background:#3f4fd6">${r1(f[2]*k)}<small>PROTEIN</small></div><div style="background:var(--gold);color:var(--ink)">${r1(f[3]*k)}<small>CARBS</small></div><div style="background:#6f7591">${r1(f[4]*k)}<small>FAT</small></div>`;
+}
+
+/* ============ photo ============ */
+function loadImg(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
+function resize(img, max, q){
+  const s = Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth*s); c.height = Math.round(img.naturalHeight*s);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  return c;
+}
+async function handlePhoto(file){
+  const box = $('#photoBox'); if(box) box.classList.add('busy');
+  try{
+    const url = URL.createObjectURL(file); const img = await loadImg(url);
+    let done = false;
+    if(assets){
+      try{
+        const c = resize(img, 1100, 0.82);
+        const blob = await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));
+        const res = await assets.upload(blob);
+        draft.photoId = res.id; delete draft.photoData; done = true;
+      }catch(e){}
+    }
+    if(!done){ draft.photoData = resize(img, 720).toDataURL('image/jpeg',0.75); delete draft.photoId; }
+    URL.revokeObjectURL(url);
+    dirty = true;
+    $('#view').innerHTML = viewToday();
+    toast('Photo added. Save to keep it');
+  }catch(e){ if(box) box.classList.remove('busy'); toast('Could not read that photo'); }
+}
+
+/* ============ events ============ */
+document.addEventListener('click', e=>{
+  const nav = e.target.closest('nav.tabs button');
+  if(nav){ if(tab==='today') syncInputs(); tab = nav.dataset.tab; confirmReset=false; if(tab==='plan') picks=null; render(); window.scrollTo(0,0); return; }
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const a = el.dataset.act, v = el.dataset.v;
+  if(['cmpA','cmpB'].includes(a)) return;
+  switch(a){
+    case 'ogoal': onboardGoal=v; render(); break;
+    case 'start': {
+      const d = ($('#obDate')||{}).value || todayISO();
+      profile = {startDate:d, goal:onboardGoal, actions:[], actionsSince:null, custom:[], log:[]};
+      saveProfile(); viewDate=todayISO(); render(); toast('Day '+(diffDays(d,todayISO())+1)+' · let\'s go'); break; }
+    case 'tab': tab=v; picks=null; render(); window.scrollTo(0,0); break;
+    case 'day': {
+      syncInputs();
+      if(dirty){ toast('Save or it will be lost'); dirty=false; }
+      const nd = addDays(viewDate, Number(v)); if(nd>todayISO()) return;
+      viewDate = nd; render(); break; }
+    case 'photo': $('#photoInput').click(); break;
+    case 'wstep': {
+      syncInputs(); const last = weighins(todayISO()).slice(-1)[0];
+      const base = draft.weight ?? (last?last.weight:70);
+      draft.weight = Math.round((base + Number(v))*10)/10; dirty=true; $('#wIn').value = draft.weight; break; }
+    case 'sig': {
+      syncInputs(); const val = Number(v);
+      draft.signals[el.dataset.k] = draft.signals[el.dataset.k]===val ? null : val; dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break; }
+    case 'done': {
+      syncInputs(); const i = draft.done.indexOf(v); i>=0 ? draft.done.splice(i,1) : draft.done.push(v); dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break; }
+    case 'excused': syncInputs(); draft.excused=!draft.excused; dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break;
+    case 'save': {
+      syncInputs();
+      if(!draft.weight && !photoSrc(draft)){ toast('Add a weight or a photo first'); return; }
+      if(draft.weight && (draft.weight<25 || draft.weight>300)){ toast('Check the weight'); return; }
+      const rec = clone(draft); rec.date = viewDate; rec.savedAt = Date.now();
+      Object.keys(rec.signals).forEach(k=>{ if(rec.signals[k]===null) delete rec.signals[k]; });
+      days[viewDate] = rec; dirty=false; saveDay(rec); render(); window.scrollTo({top:0,behavior:'smooth'}); toast('Check-in saved'); break; }
+    case 'range': range = v==='all'?'all':Number(v); render(); break;
+    case 'view': { const d=days[v]; $('#viewerImg').src=photoSrc(d); $('#viewerCap').textContent=fmtDate(v,{weekday:'long',day:'numeric',month:'long'})+(d.weight?' · '+r1(d.weight)+' kg':''); $('#viewer').classList.add('show'); break; }
+    case 'pick': {
+      const i = picks.indexOf(v);
+      if(i>=0) picks.splice(i,1); else if(picks.length<3) picks.push(v); else { toast('3 actions maximum'); return; }
+      keepScroll(()=>$('#view').innerHTML=viewPlan()); break; }
+    case 'addCustom': {
+      const t = ($('#customIn').value||'').trim(); if(!t) return;
+      profile.custom = profile.custom||[]; const id='c'+Date.now();
+      profile.custom.push({id, t}); if(picks.length<3) picks.push(id);
+      saveProfile(); keepScroll(()=>$('#view').innerHTML=viewPlan()); break; }
+    case 'savePicks': {
+      if(!picks.length){ toast('Choose at least 1 action'); return; }
+      const same = JSON.stringify([...picks].sort())===JSON.stringify([...(profile.actions||[])].sort());
+      if(same){ toast('No changes'); return; }
+      profile.actions=[...picks]; profile.actionsSince=todayISO();
+      profile.log=(profile.log||[]).concat([{date:todayISO(), actions:[...picks]}]).slice(-50);
+      saveProfile(); render(); toast('Actions saved · 3-week clock started'); break; }
+    case 'goal': profile.goal=v; saveProfile(); render(); break;
+    case 'export': {
+      const data = {profile, days:Object.fromEntries(Object.entries(days).map(([k,d])=>[k,{...d, photoData: d.photoData?'[photo]':undefined}]))};
+      navigator.clipboard.writeText(JSON.stringify(data,null,1)).then(()=>toast('Copied to clipboard')).catch(()=>toast('Copy not allowed here')); break; }
+    case 'reset': confirmReset=true; render(); break;
+    case 'resetNo': confirmReset=false; render(); break;
+    case 'resetYes': {
+      const ids = Object.keys(days).map(d=>'d-'+d);
+      if(mode==='db'){ ids.concat(['profile']).forEach(id=>col.doc(id).delete().catch(()=>{})); }
+      profile=null; days={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
+    case 'fcat': foodCat=v; foodQ=''; render(); break;
+    case 'fsel': foodSel = foodSel===v?null:v; keepScroll(()=>render()); break;
+  }
+});
+document.addEventListener('change', e=>{
+  if(e.target.id==='photoInput'){ const f=e.target.files[0]; e.target.value=''; if(f) handlePhoto(f); }
+  if(e.target.dataset.act==='cmpA'){ cmpA=e.target.value; keepScroll(()=>render()); }
+  if(e.target.dataset.act==='cmpB'){ cmpB=e.target.value; keepScroll(()=>render()); }
+});
+document.addEventListener('input', e=>{
+  if(['wIn','stepsIn','noteIn'].includes(e.target.id)){ dirty=true; }
+  if(e.target.id==='foodQ'){ foodQ=e.target.value; const pos=e.target.selectionStart; render(); const q=$('#foodQ'); q.focus(); q.setSelectionRange(pos,pos); }
+  if(e.target.id==='gramsIn'){ grams=Math.max(0,Number(e.target.value)||0); const f=Object.values(FOODS).flat().find(x=>x[0]===foodSel); if(f) $('#calcRes').innerHTML=calcRes(f,grams/100); }
+});
+$('#viewer').addEventListener('click', ()=>$('#viewer').classList.remove('show'));
+function syncInputs(){
+  if(!draft) return;
+  const w=$('#wIn'), s=$('#stepsIn'), n=$('#noteIn');
+  if(w){ const x=parseFloat(String(w.value).replace(',','.')); draft.weight = isNaN(x)?null:Math.round(x*10)/10; }
+  if(s) draft.steps = s.value===''?null:Math.round(Number(s.value));
+  if(n) draft.note = n.value;
+}
+function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
+
+/* ============ boot ============ */
+loadLocal();
+render();
+connect();
+</script>
+</body>
+</html>
