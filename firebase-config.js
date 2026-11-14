@@ -1,10 +1,10 @@
-// Paste your Firebase web config here (Project settings → Your apps → Web app).
-// These values are NOT secret. Your data is protected by firestore.rules + sign-in.
+// Firebase web config. These values are NOT secret.
+// Your data is protected by Google sign-in + firestore.rules.
 export const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  projectId: "PASTE_PROJECT",
-  storageBucket: "PASTE_PROJECT.appspot.com",
-  messagingSenderId: "PASTE",
-  appId: "PASTE"
+  apiKey: "AIzaSyB4_-YEmQ2gn4hvbWsKtYEJn9ePdCaONUE",
+  authDomain: "morning-mirror.firebaseapp.com",
+  projectId: "morning-mirror",
+  storageBucket: "morning-mirror.firebasestorage.app",
+  messagingSenderId: "217229890641",
+  appId: "1:217229890641:web:a4fa6687e57d17b8155470"
 };
