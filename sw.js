@@ -1,5 +1,5 @@
 /* Morning Mirror service worker: offline app shell + push notifications */
-const CACHE = 'mm-v4';
+const CACHE = 'mm-v5';
 const SHELL = ['./', './index.html', './firebase-config.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/badge-96.png'];
 

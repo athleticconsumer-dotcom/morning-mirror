@@ -49,6 +49,26 @@ for (const doc of users.docs) {
                          : 'Nothing logged today yet. Add your meals before bed.' });
   }
 
+  // Grease the groove: interval reminders per exercise
+  if (Array.isArray(u.gtg) && u.gtg.some(e => e.on)) {
+    let gDoc = null;
+    const lastMap = u.gtgLast || {};
+    for (const ex of u.gtg) {
+      if (!ex.on) continue;
+      const start = toMin(ex.start || '09:00'), end = toMin(ex.end || '20:00'), every = Math.max(15, Number(ex.every) || 60);
+      if (min < start || min > end) continue;
+      const last = lastMap[ex.id];
+      if (last && last.date === date && min - last.min < every - 7) continue;
+      gDoc ??= ((await entries.doc('g-' + date).get()).data() || {});
+      const sets = (gDoc.sets || []).filter(s => s.ex === ex.id);
+      if (ex.goal && sets.length >= ex.goal) continue;
+      const tgt = ex.target ? ` · ${ex.type === 'static' ? (ex.target >= 60 ? Math.floor(ex.target/60) + ':' + String(ex.target%60).padStart(2,'0') : ex.target + 's') + ' hold' : ex.target + ' reps'}` : '';
+      messages.push({ title: 'Grease the groove', tag: 'gtg-' + ex.id, url: APP_URL + '#train',
+        body: `${ex.name} · set ${sets.length + 1}${ex.goal ? ' of ' + ex.goal : ''}${tgt}` });
+      update['gtgLast.' + ex.id] = { date, min };
+    }
+  }
+
   const dead = [];
   for (const m of messages) {
     const res = await fcm.sendEachForMulticast({ tokens: u.tokens, data: m,

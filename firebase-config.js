@@ -13,5 +13,5 @@ export const firebaseConfig = {
   aiModel: "gemini-3.5-flash",
 
   // Reminders: Firebase → Projekteinstellungen → Cloud Messaging → Web-Push-Zertifikate → key pair (public key)
-  vapidKey: ""
+  vapidKey: "BH2h64d3SHPm3ihHZwpTZ7iUcoema8X6ExcWpSkIKzHpArNkje3MpnaLJks5HuF6bBGipy5nTr_DDEOVNekLT3Y"
 };

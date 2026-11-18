@@ -197,6 +197,21 @@ nav.tabs button.on{background:#ffffff1c;color:var(--gold)}
 .viewer img{max-width:100%;max-height:80vh;border-radius:12px}
 .viewer .vc{color:#fff;font-weight:700;margin-top:10px;font-size:13px}
 .hide{display:none!important}
+
+/* ===== train ===== */
+.gx{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.gx-h{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}
+.gx-n{font-weight:900;font-size:15px;color:var(--ink)}
+.gx-m{font-size:11.5px;color:var(--ink2);margin-top:4px}
+.gx-sum{text-align:center;background:var(--indigo);color:#fff;border-radius:12px;padding:6px 10px;min-width:58px}
+.gx-sum b{font-family:Oswald;font-size:20px;display:block;line-height:1.1}
+.gx-sum span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.gx-sets{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.gs{display:inline-flex;align-items:center;gap:5px;background:#ece9ff;border-radius:9px;padding:4px 4px 4px 9px;font-family:Oswald;font-size:15px;color:var(--indigo)}
+.gs small{font-family:Montserrat;font-size:9.5px;color:var(--ink2)}
+.gs button{border:none;background:transparent;color:var(--red);font-weight:900;font-size:14px;padding:0 4px}
+.gs.tot{background:var(--gold);color:var(--ink);padding-right:9px}
+.timer{font-family:Oswald;font-size:72px;font-weight:600;text-align:center;color:var(--indigo);margin:8px 0 10px;letter-spacing:.02em}
 /* ===== fuel ===== */
 .fuelmini{display:flex;align-items:center;gap:10px;background:#ffffff10;border:1px solid #ffffff1c;border-radius:14px;padding:10px 12px;margin-top:10px;color:#fff;cursor:pointer}
 .fuelmini .fm-t{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#c5c0ff;font-weight:700;white-space:nowrap}
@@ -288,7 +303,7 @@ nav.tabs button.on{background:#ffffff1c;color:var(--gold)}
   <button data-tab="progress"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 16l4-5 4 3 6-8"/></svg>Progress</button>
   <button data-tab="plan"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Plan</button>
   <button data-tab="fuel"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 13V9M12 5V3M9 3h6"/></svg>Fuel</button>
-  <button data-tab="food"><svg viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8M7 7h4"/><path d="M16 3c-2 2-2 6 0 8v10"/></svg>Food</button>
+  <button data-tab="train"><svg viewBox="0 0 24 24"><path d="M3 9v6M6 6v12M18 6v12M21 9v6M6 12h12"/></svg>Train</button>
 </div></nav>
 
 <input type="file" id="photoInput" accept="image/*" capture="user">
@@ -388,13 +403,14 @@ let tab = 'today', viewDate = todayISO(), draft = null, dirty = false;
 let picks = null, foodCat = 'Carbs', foodQ = '', foodSel = null, grams = 100, range = 30, cmpA = null, cmpB = null;
 let onboardGoal = 'cut', confirmReset = false, migrated = false;
 let foodDays = {};            // date -> {date, items:[]}
+let gtgDays = {};
 
 function loadLocal(){
-  try { const o = JSON.parse(localStorage.getItem('mm_v1') || 'null'); if(o){ profile=o.profile||null; days=o.days||{}; foodDays=o.food||{}; } } catch(e){}
+  try { const o = JSON.parse(localStorage.getItem('mm_v1') || 'null'); if(o){ profile=o.profile||null; days=o.days||{}; foodDays=o.food||{}; gtgDays=o.gtg||{}; } } catch(e){}
 }
 function saveLocal(){
   if(mode!=='local') return;
-  try { localStorage.setItem('mm_v1', JSON.stringify({profile, days, food:foodDays})); }
+  try { localStorage.setItem('mm_v1', JSON.stringify({profile, days, food:foodDays, gtg:gtgDays})); }
   catch(e){ toast('Device storage is full'); }
 }
 const chains = {};
@@ -448,8 +464,8 @@ async function connect(){
 }
 function subscribe(){
   const {fs, db} = fb;
-  const hadLocal = !!profile || Object.keys(days).length>0 || Object.keys(foodDays).length>0;
-  const local = {profile: clone(profile), days: clone(days), food: clone(foodDays)};
+  const hadLocal = !!profile || Object.keys(days).length>0 || Object.keys(foodDays).length>0 || Object.keys(gtgDays).length>0;
+  const local = {profile: clone(profile), days: clone(days), food: clone(foodDays), gtg: clone(gtgDays)};
   const ref = fs.collection(db, 'users', uid, 'entries');
   col = { doc: id => ({
     set: data => fs.setDoc(fs.doc(ref, id), JSON.parse(JSON.stringify(data))),
@@ -460,12 +476,12 @@ function subscribe(){
   unsub = fs.onSnapshot(ref, {includeMetadataChanges:true}, snap=>{
     if(!snap.metadata.fromCache){ clearTimeout(timer); setSync('<b>●</b> Synced · private'); }
     if(!snap.metadata.fromCache && snap.empty && hadLocal && !migrated){
-      migrated=true; profile=local.profile; days=local.days; foodDays=local.food||{};
-      if(profile) saveProfile(); Object.values(days).forEach(saveDay); Object.keys(foodDays).forEach(saveFood); render(); return;
+      migrated=true; profile=local.profile; days=local.days; foodDays=local.food||{}; gtgDays=local.gtg||{};
+      if(profile) saveProfile(); Object.values(days).forEach(saveDay); Object.keys(foodDays).forEach(saveFood); Object.keys(gtgDays).forEach(saveGtg); render(); return;
     }
-    let np=null; const d={}, fd={};
-    snap.docs.forEach(doc=>{ const v=doc.data(); if(doc.id==='profile') np=v; else if(doc.id.startsWith('d-') && v.date) d[v.date]=v; else if(doc.id.startsWith('f-') && v.date) fd[v.date]=v; });
-    profile=np; days=d; foodDays=fd; render(true);
+    let np=null; const d={}, fd={}, gd={};
+    snap.docs.forEach(doc=>{ const v=doc.data(); if(doc.id==='profile') np=v; else if(doc.id.startsWith('d-') && v.date) d[v.date]=v; else if(doc.id.startsWith('f-') && v.date) fd[v.date]=v; else if(doc.id.startsWith('g-') && v.date) gd[v.date]=v; });
+    profile=np; days=d; foodDays=fd; gtgDays=gd; render(true);
   }, err=>{ clearTimeout(timer); setSync('Sync error<br><small>'+esc(err.code||'')+'</small>'); });
 }
 
@@ -541,6 +557,7 @@ function render(fromSync){
   else if(tab==='progress') $('#view').innerHTML = viewProgress();
   else if(tab==='plan') $('#view').innerHTML = viewPlan();
   else if(tab==='fuel') $('#view').innerHTML = viewFuel();
+  else if(tab==='train') $('#view').innerHTML = viewTrain();
   else $('#view').innerHTML = viewFood();
 }
 function renderTodayTopOnly(){ const el=$('#topStats'); if(el) el.innerHTML = topStats(); }
@@ -838,6 +855,7 @@ function viewFuel(){
           <div class="fi-k">${fmt0(i.kcal)}</div><button class="fi-x" data-act="fdel" data-v="${esc(i.id)}">×</button></div>`).join('')}</div>`; }).join('')
       : `<div class="empty">Nothing logged ${fuelDate===t?'today':'this day'} yet.</div>`}
   `, {vert:'食事'})}
+  <button class="btn ghost" style="margin:4px 0 0" data-act="openFoodGuide">Food guide · values per 100 g</button>
   ${card(`
     <div class="title sm">Daily targets</div>
     <div class="tgrid">
@@ -853,8 +871,8 @@ function viewFuel(){
 }
 
 /* ---------- sheets ---------- */
-function closeSheet(){ stopScan(); sheet = null; const el=$('#sheet'); el.classList.remove('show'); el.innerHTML=''; }
-function sheetWrap(title, inner){ return `<div class="panel"><div class="label">F U E L</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
+function closeSheet(){ stopScan(); if(typeof stopGtgTimer==='function') stopGtgTimer(); sheet = null; const el=$('#sheet'); el.classList.remove('show'); el.innerHTML=''; }
+function sheetWrap(title, inner){ const lb = sheet && /^g/.test(sheet.type) ? 'T R A I N' : 'F U E L'; return `<div class="panel"><div class="label">${lb}</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
 function mealChips(sel){ return `<div class="chips">${MEALS.map(m=>`<button class="chip ${sel===m?'on':''}" data-act="smeal" data-v="${m}">${m}</button>`).join('')}</div>`; }
 function resBoxes(v){ return `<div class="res" style="display:flex;gap:6px;margin-top:10px">
   <div style="flex:1;text-align:center;border-radius:10px;padding:8px 4px;color:#fff;font-family:Oswald;font-size:18px;background:var(--ink)">${fmt0(v.kcal)}<small style="display:block;font-family:Montserrat;font-size:9px;letter-spacing:.12em;opacity:.85">KCAL</small></div>
@@ -924,6 +942,7 @@ function renderSheet(){
     }
     html = sheetWrap('Photo meal', body);
   }
+  if(S.type==='gEdit' || S.type==='gLog') html = gtgSheet();
   el.innerHTML = html; el.classList.add('show');
 }
 function listRows(q){
@@ -1125,7 +1144,7 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if(tab==='plan') keepScroll(()=>render()); });
 addEventListener('appinstalled', () => { installEvt = null; toast('Installed. Open it from your home screen'); if(tab==='plan') render(); });
-function hashTab(){ const h = location.hash.slice(1); if(['today','progress','plan','fuel','food'].includes(h)){ tab = h; render(); } }
+function hashTab(){ const h = location.hash.slice(1); if(['today','progress','plan','fuel','food','train'].includes(h)){ tab = h; render(); } }
 addEventListener('hashchange', hashTab);
 
 async function loadPush(){
@@ -1142,8 +1161,8 @@ async function listenForeground(){
 }
 function ntValues(){
   const g = id => $(id);
-  return { morning: (g('#ntM')||{}).value || '07:30', evening: (g('#ntE')||{}).value || '20:30',
-           morningOn: ntDraft ? ntDraft.morningOn : true, eveningOn: ntDraft ? ntDraft.eveningOn : true,
+  return { morning: (g('#ntM')||{}).value || (push&&push.morning) || '07:30', evening: (g('#ntE')||{}).value || (push&&push.evening) || '20:30',
+           morningOn: ntDraft ? ntDraft.morningOn : !(push&&push.morningOn===false), eveningOn: ntDraft ? ntDraft.eveningOn : !(push&&push.eveningOn===false),
            tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Zurich' };
 }
 async function savePush(extra){
@@ -1163,7 +1182,7 @@ async function enableNotifs(){
     const token = await m.getToken(m.getMessaging(fb.app), {vapidKey: firebaseConfig.vapidKey, serviceWorkerRegistration: reg});
     if(!token) throw new Error('no token');
     localStorage.setItem('mm_push_token', token);
-    await savePush({enabled:true, tokens: fb.fs.arrayUnion(token)});
+    await savePush({enabled:true, tokens: fb.fs.arrayUnion(token)}); syncGtgReminders();
     listenForeground(); keepScroll(()=>render()); toast('Reminders on');
   }catch(e){ toast('Could not turn on reminders ('+String(e.code||e.message||e).slice(0,40)+')'); }
 }
@@ -1225,6 +1244,171 @@ function appClick(a, v){
     case 'ntTest': testNotif(); return true;
   }
   return false;
+}
+/* ============ train: grease the groove ============ */
+let trainDate = todayISO(), gtgTimer = null;
+const fmtSec = s => { s = Math.round(+s||0); const m = Math.floor(s/60); return m ? m+':'+String(s%60).padStart(2,'0') : s+'s'; };
+function gtgList(){ return (profile && profile.gtg) || []; }
+function gtgSets(d, exId){ const doc = gtgDays[d]; return doc ? (doc.sets||[]).filter(s => !exId || s.ex===exId) : []; }
+function saveGtg(date){ const doc = gtgDays[date] || {date, sets:[]}; gtgDays[date] = doc; return writeDoc('g-'+date, doc); }
+function unitOf(ex){ return ex.type==='static' ? 'sec' : 'reps'; }
+function fmtVal(ex, v){ return ex.type==='static' ? fmtSec(v) : Math.round(v)+' reps'; }
+async function syncGtgReminders(){
+  if(!fb || !uid) return;
+  const gtg = gtgList().map(e => ({id:e.id, name:e.name, type:e.type, target:e.target||null, goal:e.goal||null,
+    on:!!(e.rem && e.rem.on), start:(e.rem&&e.rem.start)||'09:00', end:(e.rem&&e.rem.end)||'20:00', every:(e.rem&&e.rem.every)||60}));
+  try{ await fb.fs.setDoc(fb.fs.doc(fb.db,'push',uid), {gtg, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Zurich'}, {merge:true});
+       push = {...(push||{}), gtg}; }catch(e){}
+}
+
+function viewTrain(){
+  if(!profile) return `<div class="banner">TRAINING</div>` + onboarding();
+  const t = todayISO(), list = gtgList();
+  const remOn = !!(push && push.enabled);
+  return `
+  <div class="banner">TRAINING</div>
+  <div class="datebar">
+    <button data-act="tday" data-v="-1">‹</button>
+    <div class="d"><div class="d1">${trainDate===t?'Today':esc(fmtDate(trainDate))}</div><div class="d2">${esc(fmtDate(trainDate,{weekday:'long',day:'numeric',month:'long'}))}</div></div>
+    <button data-act="tday" data-v="1" ${trainDate>=t?'disabled':''}>›</button>
+  </div>
+  ${card(`
+    <div class="title">Grease the groove</div>
+    <p class="lead" style="margin-top:0">Short sets spread through the day. Log each set the moment you do it.</p>
+    ${list.length ? list.map(ex => {
+      const sets = gtgSets(trainDate, ex.id), total = sets.reduce((s,x)=>s+(+x.v||0),0);
+      const pct = ex.goal ? Math.min(100, sets.length/ex.goal*100) : 0;
+      return `<div class="gx">
+        <div class="gx-h" data-act="gEdit" data-v="${ex.id}">
+          <div><div class="gx-n">${esc(ex.name)}</div>
+            <div class="gx-m"><span class="tag" style="${ex.type==='static'?'background:#fff4d1;color:#6b5205':''}">${ex.type==='static'?'Static':'Dynamic'}</span>
+            ${ex.target?` · target ${fmtVal(ex, ex.target)}`:''}${ex.rem&&ex.rem.on?` · 🔔 every ${ex.rem.every} min`:''}</div></div>
+          <div class="gx-sum"><b>${sets.length}${ex.goal?'/'+ex.goal:''}</b><span>sets</span></div>
+        </div>
+        ${ex.goal?`<div class="mt" style="height:7px;border-radius:4px;background:#e3e0fb;overflow:hidden;margin:8px 0 2px"><i style="display:block;height:100%;width:${pct}%;background:var(--violet)"></i></div>`:''}
+        <div class="gx-sets">${sets.map(s=>`<span class="gs">${ex.type==='static'?fmtSec(s.v):Math.round(s.v)}<small>${new Date(s.t).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})}</small><button data-act="gDelSet" data-v="${s.id}">×</button></span>`).join('')}
+          ${sets.length?`<span class="gs tot">Σ ${fmtVal(ex,total)}</span>`:''}</div>
+        <button class="btn ${ex.type==='static'?'gold':'ind'}" style="margin-top:8px;padding:12px" data-act="gLog" data-v="${ex.id}">+ Log ${ex.type==='static'?'hold':'set'}</button>
+      </div>`; }).join('') : `<div class="empty">No exercises yet. Add the ones you want to groove.</div>`}
+    <button class="btn ghost" style="margin-top:12px" data-act="gAdd">+ Add exercise</button>
+    ${list.some(e=>e.rem&&e.rem.on) && !remOn ? `<div class="warnline">Exercise reminders are set, but reminders are off on this device. Turn them on in Plan → Reminders.</div>`:''}
+  `, {vert:'溝', vertR:'継続は力'})}
+  ${list.length ? card(`<div class="title sm">Last 14 days</div>${gtgHistory()}`, {vert:'記録'}) : ''}
+  `;
+}
+function gtgHistory(){
+  const t = todayISO(), dates = []; for(let i=13;i>=0;i--) dates.push(addDays(t,-i));
+  return gtgList().map(ex => {
+    const vals = dates.map(d => gtgSets(d, ex.id).reduce((s,x)=>s+(+x.v||0),0));
+    const setsN = dates.map(d => gtgSets(d, ex.id).length);
+    const mx = Math.max(1, ...vals), W=300, H=70, bw=W/14;
+    const bars = vals.map((v,i)=>`<rect x="${i*bw+2}" y="${H-14-(v/mx)*(H-24)}" width="${bw-4}" height="${Math.max(v?2:0,(v/mx)*(H-24))}" rx="3" fill="${dates[i]===trainDate?'#e7c44a':'#5a48ff'}"/>`).join('');
+    const labels = [0,6,13].map(i=>`<text x="${i*bw+bw/2}" y="${H-2}" font-size="8" text-anchor="middle" fill="#6b6894">${esc(fmtDate(dates[i],{day:'numeric',month:'short'}))}</text>`).join('');
+    const sum = vals.reduce((a,b)=>a+b,0), sn = setsN.reduce((a,b)=>a+b,0);
+    return `<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:800"><span>${esc(ex.name)}</span><span style="font-family:Oswald;font-weight:500;color:var(--ink2)">${sn} sets · ${fmtVal(ex,sum)}</span></div>
+      <svg viewBox="0 0 ${W} ${H}" class="chart">${bars}${labels}</svg></div>`;
+  }).join('');
+}
+
+/* sheets */
+function gtgSheet(){
+  const S = sheet;
+  if(S.type==='gEdit'){
+    const ex = S.ex, r = ex.rem || {on:false, every:60, start:'09:00', end:'20:00'};
+    return sheetWrap(S.isNew?'Add exercise':'Edit exercise', `
+      <div class="field" style="margin-top:6px"><span class="fl">Exercise</span><input type="text" id="gxName" placeholder="e.g. Pull-ups, L-sit, Planche lean" value="${esc(ex.name||'')}"></div>
+      <div class="field"><span class="fl">Type</span><div class="chips">
+        <button class="chip ${ex.type!=='static'?'on':''}" data-act="gType" data-v="dynamic">Dynamic · reps</button>
+        <button class="chip ${ex.type==='static'?'on':''}" data-act="gType" data-v="static">Static · hold time</button></div></div>
+      <div class="tgrid" style="grid-template-columns:1fr 1fr">
+        <div><label id="gxTL">${ex.type==='static'?'Target hold (sec)':'Target reps / set'}</label><input type="number" inputmode="numeric" id="gxTarget" placeholder="optional" value="${ex.target||''}"></div>
+        <div><label>Sets per day</label><input type="number" inputmode="numeric" id="gxGoal" placeholder="optional" value="${ex.goal||''}"></div>
+      </div>
+      <div class="field"><span class="fl">Reminder</span>
+        <div class="check ${r.on?'on':''}" data-act="gRem"><div class="bx">${r.on?'✓':''}</div><div><div class="ct">Remind me through the day</div><div class="cd">Stops once the day's sets are done</div></div></div>
+        <div id="gRemBox" class="${r.on?'':'hide'}">
+          <div class="chips" style="margin-top:8px">${[30,45,60,90,120].map(m=>`<button class="chip ${+r.every===m?'on':''}" data-act="gEvery" data-v="${m}">every ${m} min</button>`).join('')}</div>
+          <div class="tgrid" style="grid-template-columns:1fr 1fr"><div><label>From</label><input type="time" id="gxStart" value="${r.start||'09:00'}"></div><div><label>Until</label><input type="time" id="gxEnd" value="${r.end||'20:00'}"></div></div>
+          ${!(push&&push.enabled)?`<p class="muted">Reminders also need to be switched on once in Plan → Reminders.</p>`:''}
+        </div></div>
+      <button class="btn gold" style="margin-top:6px" data-act="gSave">Save</button>
+      ${S.isNew?'':`<button class="btn red" data-act="gDel">Delete exercise</button>`}`);
+  }
+  if(S.type==='gLog'){
+    const ex = gtgList().find(e=>e.id===S.exId); if(!ex) return '';
+    const last = gtgSets(trainDate, ex.id).slice(-1)[0] || Object.keys(gtgDays).sort().reverse().map(d=>gtgSets(d,ex.id).slice(-1)[0]).find(Boolean);
+    if(ex.type==='static') return sheetWrap(esc(ex.name), `
+      <p class="muted" style="margin-top:0">Hold ${ex.target?'· target '+fmtSec(ex.target):''}${last?' · last '+fmtSec(last.v):''}</p>
+      <div class="timer" id="gClock">${fmtSec(S.sec||0)}</div>
+      ${ex.target?`<div class="mt" style="height:8px;border-radius:4px;background:#e3e0fb;overflow:hidden;margin:0 0 10px"><i id="gBar" style="display:block;height:100%;width:${Math.min(100,(S.sec||0)/ex.target*100)}%;background:var(--gold)"></i></div>`:''}
+      <div class="row"><button class="btn ${S.running?'red':'ind'}" id="gStartBtn" data-act="gStart">${S.running?'Stop':(S.sec?'Resume':'Start')}</button><button class="btn ghost" data-act="gReset">Reset</button></div>
+      <div class="field"><span class="fl">Or enter seconds</span><input type="number" inputmode="numeric" id="gSecIn" placeholder="${ex.target||''}" value=""></div>
+      <button class="btn gold" data-act="gSaveSet">Save hold</button>`);
+    const v = S.reps ?? (last ? Math.round(last.v) : (ex.target || 5));
+    return sheetWrap(esc(ex.name), `
+      <p class="muted" style="margin-top:0">Reps${ex.target?' · target '+ex.target:''}${last?' · last '+Math.round(last.v):''}</p>
+      <div class="weightbox" style="margin:10px 0"><button class="stepbtn" data-act="gRep" data-v="-1">−</button><input type="number" inputmode="numeric" id="gRepIn" value="${v}"><button class="stepbtn" data-act="gRep" data-v="1">+</button><span class="u">reps</span></div>
+      <button class="btn gold" data-act="gSaveSet">Save set</button>`);
+  }
+  return '';
+}
+function stopGtgTimer(){ if(gtgTimer){ clearInterval(gtgTimer); gtgTimer=null; } if(sheet && sheet.type==='gLog') sheet.running=false; }
+let audioCtx = null;
+function beep(){ try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(.25,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.5); o.start(); o.stop(audioCtx.currentTime+.5); }catch(e){} if(navigator.vibrate) try{navigator.vibrate([120,60,120]);}catch(e){} }
+function tickUI(ex){ const c=$('#gClock'); if(c) c.textContent=fmtSec(sheet.sec); const b=$('#gBar'); if(b&&ex.target) b.style.width=Math.min(100,sheet.sec/ex.target*100)+'%'; }
+
+function trainClick(a, v){
+  switch(a){
+    case 'tday': { const nd = addDays(trainDate, Number(v)); if(nd>todayISO()) return true; trainDate = nd; render(); return true; }
+    case 'gAdd': sheet = {type:'gEdit', isNew:true, ex:{type:'dynamic', rem:{on:false, every:60, start:'09:00', end:'20:00'}}}; renderSheet(); return true;
+    case 'gEdit': { const ex = gtgList().find(e=>e.id===v); if(!ex) return true; sheet = {type:'gEdit', ex: clone(ex)}; sheet.ex.rem = sheet.ex.rem || {on:false, every:60, start:'09:00', end:'20:00'}; renderSheet(); return true; }
+    case 'gType': { gReadForm(); sheet.ex.type = v; renderSheet(); return true; }
+    case 'gRem': { gReadForm(); sheet.ex.rem.on = !sheet.ex.rem.on; renderSheet(); return true; }
+    case 'gEvery': { gReadForm(); sheet.ex.rem.every = Number(v); renderSheet(); return true; }
+    case 'gSave': {
+      gReadForm(); const ex = sheet.ex; if(!ex.name){ toast('Name the exercise'); return true; }
+      profile.gtg = profile.gtg || [];
+      if(sheet.isNew){ ex.id = 'x'+Date.now().toString(36); profile.gtg.push(ex); }
+      else profile.gtg = profile.gtg.map(e => e.id===ex.id ? ex : e);
+      saveProfile(); syncGtgReminders(); closeSheet(); render(); toast('Saved'); return true; }
+    case 'gDel': { if(!sheet.confirmDel){ sheet.confirmDel=true; const b=$('#sheet [data-act=gDel]'); if(b) b.textContent='Tap again to delete (logs stay)'; return true; }
+      profile.gtg = gtgList().filter(e=>e.id!==sheet.ex.id); saveProfile(); syncGtgReminders(); closeSheet(); render(); toast('Deleted'); return true; }
+    case 'gLog': sheet = {type:'gLog', exId:v, sec:0, running:false}; renderSheet(); return true;
+    case 'gRep': { const i=$('#gRepIn'); i.value = Math.max(0, (+i.value||0) + Number(v)); sheet.reps = +i.value; return true; }
+    case 'gStart': {
+      const ex = gtgList().find(e=>e.id===sheet.exId); const btn = $('#gStartBtn');
+      if(sheet.running){ stopGtgTimer(); btn.textContent='Resume'; btn.className='btn ind'; return true; }
+      try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){}
+      sheet.running = true; btn.textContent='Stop'; btn.className='btn red';
+      const t0 = Date.now() - (sheet.sec||0)*1000; let beeped = ex.target && sheet.sec>=ex.target;
+      gtgTimer = setInterval(()=>{ if(!sheet || sheet.type!=='gLog'){ stopGtgTimer(); return; }
+        sheet.sec = Math.floor((Date.now()-t0)/1000); tickUI(ex);
+        if(ex.target && !beeped && sheet.sec>=ex.target){ beeped=true; beep(); } }, 200);
+      return true; }
+    case 'gReset': stopGtgTimer(); sheet.sec=0; renderSheet(); return true;
+    case 'gSaveSet': {
+      const ex = gtgList().find(e=>e.id===sheet.exId); if(!ex) return true;
+      let val;
+      if(ex.type==='static'){ stopGtgTimer(); const m = +($('#gSecIn').value)||0; val = m || sheet.sec; }
+      else val = +($('#gRepIn').value)||0;
+      if(!val){ toast(ex.type==='static'?'Start the timer or enter seconds':'Enter the reps'); return true; }
+      const d = trainDate, doc = gtgDays[d] || {date:d, sets:[]};
+      doc.sets.push({id:'s'+Date.now().toString(36), ex:ex.id, v:val, t: d===todayISO() ? Date.now() : parse(d).getTime()+12*3600e3});
+      gtgDays[d] = doc; saveGtg(d); closeSheet(); keepScroll(()=>render());
+      const n = gtgSets(d, ex.id).length; toast(`Set ${n}${ex.goal?' of '+ex.goal:''} saved`); return true; }
+    case 'gDelSet': { const doc = gtgDays[trainDate]; if(!doc) return true; doc.sets = doc.sets.filter(s=>s.id!==v); saveGtg(trainDate); keepScroll(()=>render()); return true; }
+    case 'openFoodGuide': tab='food'; closeSheet(); render(); window.scrollTo(0,0); return true;
+  }
+  return false;
+}
+function gReadForm(){
+  const ex = sheet.ex, val = id => { const e=$(id); return e ? e.value : undefined; };
+  if(val('#gxName')!==undefined) ex.name = val('#gxName').trim();
+  const tg = val('#gxTarget'), gl = val('#gxGoal');
+  if(tg!==undefined) ex.target = Math.max(0, Math.round(+tg||0)) || null;
+  if(gl!==undefined) ex.goal = Math.max(0, Math.round(+gl||0)) || null;
+  if(val('#gxStart')) ex.rem.start = val('#gxStart');
+  if(val('#gxEnd')) ex.rem.end = val('#gxEnd');
 }
 /* ============ photo ============ */
 function loadImg(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
@@ -1317,12 +1501,12 @@ document.addEventListener('click', e=>{
     case 'reset': confirmReset=true; render(); break;
     case 'resetNo': confirmReset=false; render(); break;
     case 'resetYes': {
-      const ids = Object.keys(days).map(d=>'d-'+d).concat(Object.keys(foodDays).map(d=>'f-'+d));
+      const ids = Object.keys(days).map(d=>'d-'+d).concat(Object.keys(foodDays).map(d=>'f-'+d)).concat(Object.keys(gtgDays).map(d=>'g-'+d));
       if(mode==='db'){ ids.concat(['profile']).forEach(id=>col.doc(id).delete().catch(()=>{})); }
-      profile=null; days={}; foodDays={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
+      profile=null; days={}; foodDays={}; gtgDays={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
     case 'fcat': foodCat=v; foodQ=''; render(); break;
     case 'fsel': foodSel = foodSel===v?null:v; keepScroll(()=>render()); break;
-    default: if(!appClick(a, v)) fuelClick(a, v, el);
+    default: if(!appClick(a, v) && !trainClick(a, v)) fuelClick(a, v, el);
   }
 });
 document.addEventListener('change', e=>{
