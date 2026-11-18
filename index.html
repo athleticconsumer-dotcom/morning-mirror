@@ -199,6 +199,30 @@ nav.tabs button.on{background:#ffffff1c;color:var(--gold)}
 .hide{display:none!important}
 
 /* ===== train ===== */
+.seg2{overflow-x:auto;scrollbar-width:none}
+.seg2 button{flex:1 0 auto;padding:9px 9px;font-size:10.5px}
+.restbox{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#1c1580,#2b20b8);color:#fff;border-radius:14px;padding:12px;margin:10px 0}
+.restbox .rb-l{font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;color:#c5c0ff;font-weight:700}
+.restbox .rb-t{font-family:Oswald;font-size:40px;font-weight:600;line-height:1.05}
+.restbox .rb-t.due{color:var(--gold)}
+.restbox .rb-a{flex:1;min-width:0}
+.restbox .chip{padding:5px 8px;font-size:11px;background:#ffffff14;border-color:#ffffff2a;color:#fff}
+.restbox .chip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.lift{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.lf-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.lf-h b{font-size:15px;font-weight:900}
+.lf-h span{font-family:Oswald;font-size:13px;color:var(--ink2)}
+table.lt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+table.lt th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);text-align:left;padding:3px 4px;border-bottom:1px solid var(--line)}
+table.lt td{padding:6px 4px;border-bottom:1px solid #eeecfb}
+table.lt .num{text-align:right;font-family:Oswald}
+table.lt tr.wu td{color:var(--ink2)}
+.ldel{border:none;background:transparent;color:var(--red);font-weight:900;font-size:15px}
+.lstat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.lstat div{background:#f0eeff;border-radius:10px;padding:8px 10px}
+.lstat small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:700}
+.lstat b{font-family:Oswald;font-size:17px;font-weight:600;color:var(--indigo)}
+
 .seg2{display:flex;gap:4px;background:#ffffff12;border:1px solid #ffffff1c;border-radius:14px;padding:4px;margin:0 0 8px}
 .seg2 button{flex:1;border:none;background:transparent;color:#c5c0ff;font:inherit;font-size:11px;font-weight:800;letter-spacing:.06em;padding:9px 2px;border-radius:10px}
 .seg2 button.on{background:var(--gold);color:var(--ink)}
@@ -900,7 +924,7 @@ function viewFuel(){
 
 /* ---------- sheets ---------- */
 function closeSheet(){ stopScan(); if(typeof stopGtgTimer==='function') stopGtgTimer(); sheet = null; const el=$('#sheet'); el.classList.remove('show'); el.innerHTML=''; }
-function sheetWrap(title, inner){ const lb = sheet && /^(g|t|sk|acc|w)/.test(sheet.type) ? 'T R A I N' : 'F U E L'; return `<div class="panel"><div class="label">${lb}</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
+function sheetWrap(title, inner){ const lb = sheet && /^(g|t|sk|acc|w|ss)/.test(sheet.type) ? 'T R A I N' : 'F U E L'; return `<div class="panel"><div class="label">${lb}</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
 function mealChips(sel){ return `<div class="chips">${MEALS.map(m=>`<button class="chip ${sel===m?'on':''}" data-act="smeal" data-v="${m}">${m}</button>`).join('')}</div>`; }
 function resBoxes(v){ return `<div class="res" style="display:flex;gap:6px;margin-top:10px">
   <div style="flex:1;text-align:center;border-radius:10px;padding:8px 4px;color:#fff;font-family:Oswald;font-size:18px;background:var(--ink)">${fmt0(v.kcal)}<small style="display:block;font-family:Montserrat;font-size:9px;letter-spacing:.12em;opacity:.85">KCAL</small></div>
@@ -972,6 +996,7 @@ function renderSheet(){
   }
   if(S.type==='gEdit' || S.type==='gLog') html = gtgSheet();
   if(['tLog','skOpen','skNew','accNew','wEdit'].includes(S.type)) html = train2Sheet();
+  if(['ssPick','ssAcc'].includes(S.type)) html = liftSheet();
   el.innerHTML = html; el.classList.add('show');
 }
 function listRows(q){
@@ -1470,6 +1495,7 @@ function findAcc(key){ for(const m of Object.keys(MUSCLES)){ const e = accCatalo
 function skillList(){ return SKILLS.concat((profile && profile.skillsCustom)||[]); }
 function skillCur(id){ const s = ((profile && profile.skills)||{})[id]; return s ? s.cur : null; }
 function exInfo(key){
+  if(key.startsWith('l:')){ const L = LIFTS.find(x=>x[0]===key); return {name: L?L[1]:key, mode:'reps', bw: L?L[2]:false, sub:'Streetlift', lift:true}; }
   if(key.startsWith('a:')){ const e = findAcc(key); return e ? {name:e.name, mode:e.mode, bw:e.bw, sub:e.muscle} : {name:key.slice(2), mode:'reps', bw:false, sub:''}; }
   const [, sid, i] = key.split(':'); const sk = skillList().find(s=>s.id===sid); const st = sk && sk.steps[+i];
   return st ? {name:st[0], mode:st[1]||'hold', bw:true, sub:sk.name+' · step '+(+i+1)} : {name:key, mode:'reps', bw:true, sub:''};
@@ -1490,8 +1516,8 @@ function lastTxt(key, mode){ const all = allSets(key); const s = all[all.length-
 function trainHead(){
   const t = todayISO();
   return `<div class="banner">TRAINING</div>
-  <div class="seg2">${[['groove','Groove'],['acc','Accessories'],['skills','Skills'],['work','Workouts']].map(([k,l])=>`<button class="${trainSec===k?'on':''}" data-act="tsec" data-v="${k}">${l}${k==='work'&&activeW?' ●':''}</button>`).join('')}</div>
-  ${trainSec==='work' ? '' : `<div class="datebar">
+  <div class="seg2">${[['groove','Groove'],['lift','Streetlift'],['skills','Skills'],['acc','Accessories'],['work','Workouts']].map(([k,l])=>`<button class="${trainSec===k?'on':''}" data-act="tsec" data-v="${k}">${l}${activeW && ((activeW.kind||'workout')===({lift:'lift',skills:'skill',work:'workout'})[k])?' ●':''}</button>`).join('')}</div>
+  ${trainSec==='work' || (activeW && ((trainSec==='lift'&&activeW.kind==='lift')||(trainSec==='skills'&&activeW.kind==='skill'))) || trainSec==='lift' ? '' : `<div class="datebar">
     <button data-act="tday" data-v="-1">‹</button>
     <div class="d"><div class="d1">${trainDate===t?'Today':esc(fmtDate(trainDate))}</div><div class="d2">${esc(fmtDate(trainDate,{weekday:'long',day:'numeric',month:'long'}))}</div></div>
     <button data-act="tday" data-v="1" ${trainDate>=t?'disabled':''}>›</button>
@@ -1501,7 +1527,8 @@ function viewTrain(){
   if(!profile) return `<div class="banner">TRAINING</div>` + onboarding();
   if(trainSec==='groove') return viewGroove();
   if(trainSec==='acc') return trainHead() + viewAcc();
-  if(trainSec==='skills') return trainHead() + viewSkills();
+  if(trainSec==='lift') return trainHead() + viewLift();
+  if(trainSec==='skills') return trainHead() + skillSessionCard() + viewSkills();
   return trainHead() + viewWork();
 }
 
@@ -1541,7 +1568,8 @@ function workoutsList(){ return (profile && profile.workouts) || []; }
 function viewWork(){
   const ws = workoutsList();
   let active = '';
-  if(activeW){
+  if(activeW && activeW.kind && activeW.kind!=='workout') active = `<div class="warnline" style="margin-top:12px">${esc(activeW.name)} is running. <b data-act="tsec" data-v="${activeW.kind==='lift'?'lift':'skills'}" style="cursor:pointer;text-decoration:underline">Open it</b></div>`;
+  else if(activeW){
     const w = ws.find(x=>x.id===activeW.workoutId) || {name:activeW.name, items:[]};
     const d = iso(new Date(activeW.start)); const sets = (tDoc(d).sets||[]).filter(s=>s.wid===activeW.wid);
     active = card(`<div class="title sm">${esc(w.name)} <span class="tag">live</span></div>
@@ -1576,6 +1604,7 @@ function train2Sheet(){
     const plan = S.wid && (workoutsList().find(w=>w.id===activeW.workoutId)||{items:[]}).items.find(i=>i.key===S.key);
     return sheetWrap(esc(info.name), `
       <p class="muted" style="margin-top:0">${esc(info.sub||'')}${plan&&plan.plan?' · plan: <b>'+esc(plan.plan)+'</b>':''}${lt?'<br>'+esc(lt):''}${bt?' · '+esc(bt):''}</p>
+      ${info.lift ? `<div class="chips"><button class="chip ${S.warm?'on':''}" data-act="lWarm" data-v="1">Warm-up</button><button class="chip ${!S.warm?'on':''}" data-act="lWarm" data-v="0">Work set</button></div>` : ''}
       <div class="field"><span class="fl">${info.bw?'Added weight (kg)':'Weight (kg)'}</span>
         <div class="weightbox"><button class="stepbtn" data-act="tKg" data-v="-2.5">−</button><input type="number" inputmode="decimal" step="0.5" id="tKgIn" value="${S.kg??''}" placeholder="${info.bw?'0':'kg'}"><button class="stepbtn" data-act="tKg" data-v="2.5">+</button><span class="u">kg</span></div></div>
       ${info.mode==='hold' ? `
@@ -1583,7 +1612,8 @@ function train2Sheet(){
         <div class="row"><button class="btn ${S.running?'red':'ind'}" id="tStartBtn" data-act="tStart">${S.running?'Stop':(S.sec?'Resume':'Start')}</button><button class="btn ghost" data-act="tReset">Reset</button></div>
         <div class="field"><span class="fl">Or enter seconds</span><input type="number" inputmode="numeric" id="tSecIn" value=""></div>`
       : `<div class="field"><span class="fl">Reps</span><div class="weightbox"><button class="stepbtn" data-act="tRep" data-v="-1">−</button><input type="number" inputmode="numeric" id="tRepIn" value="${S.reps??''}"><button class="stepbtn" data-act="tRep" data-v="1">+</button><span class="u">reps</span></div></div>`}
-      <button class="btn gold" data-act="tSave">Save ${info.mode==='hold'?'hold':'set'}</button>
+      ${info.lift ? `<div class="field"><span class="fl">Rest before this set (m:ss)</span><input type="text" inputmode="decimal" id="tRestIn" placeholder="first set" value="${S.rest!=null?fmtMS(S.rest):''}"></div>` : ''}
+      <button class="btn gold" data-act="tSave">Save ${info.lift?(S.warm?'warm-up':'work set'):(info.mode==='hold'?'hold':'set')}</button>
       ${sets.length?`<div class="field"><span class="fl">${S.wid?'This workout':'Logged '+(d===todayISO()?'today':fmtDate(d))}</span><div class="gx-sets">${sets.map((s,i)=>`<span class="gs"><small>${i+1}</small> ${fmtSet(s, info.mode)}<button data-act="tDel" data-v="${s.id}">×</button></span>`).join('')}</div></div>`:''}`);
   }
   if(S.type==='skOpen'){
@@ -1660,9 +1690,13 @@ function train2Click(a, v, el){
       else { rec.reps = +($('#tRepIn').value)||0; if(!rec.reps){ toast('Enter the reps'); return true; } sheet.reps = rec.reps; }
       const d = sheet.wid ? iso(new Date(activeW.start)) : trainDate;
       if(sheet.wid) rec.wid = sheet.wid;
+      if(info.lift){ rec.warm = !!sheet.warm; const ri=$('#tRestIn'); const rv = ri ? parseMS(ri.value) : null; if(rv!=null) rec.rest = rv; }
+      else if(sheet.wid && activeW && activeW.lastSetAt) rec.rest = Math.round((Date.now()-activeW.lastSetAt)/1000);
+      if(sheet.wid && activeW){ activeW.lastSetAt = Date.now(); activeW._alarmed = false; saveActive(); }
       if(d!==todayISO() && !sheet.wid) rec.t = parse(d).getTime()+12*3600e3;
       const doc = tDoc(d); doc.sets = (doc.sets||[]).concat([rec]); tDays[d] = doc; saveT(d);
-      sheet.sec = 0; renderSheet(); keepScroll(()=>render());
+      sheet.sec = 0; if(info.lift){ closeSheet(); keepScroll(()=>render()); toast((rec.warm?'Warm-up':'Work set')+' saved · rest timer running'); return true; }
+      renderSheet(); keepScroll(()=>render());
       toast(`Set ${(doc.sets.filter(s=>s.ex===rec.ex && (!rec.wid || s.wid===rec.wid))).length} saved`); return true; }
     case 'tDel': { const d = sheet.wid ? iso(new Date(activeW.start)) : trainDate; const doc = tDoc(d); doc.sets = (doc.sets||[]).filter(s=>s.id!==v); tDays[d]=doc; saveT(d); tReadKg(); renderSheet(); keepScroll(()=>render()); return true; }
     case 'skOpen': sheet = {type:'skOpen', id:v}; renderSheet(); return true;
@@ -1697,7 +1731,7 @@ function train2Click(a, v, el){
     case 'wDel': { if(!sheet.confirmDel){ sheet.confirmDel=true; renderSheet(); return true; }
       profile.workouts = workoutsList().filter(x=>x.id!==sheet.w.id); saveProfile(); closeSheet(); render(); return true; }
     case 'wStart': { const w = workoutsList().find(x=>x.id===v); if(!w || activeW) return true;
-      activeW = {wid:'s'+Date.now().toString(36), workoutId:w.id, name:w.name, start:Date.now()};
+      activeW = {wid:'s'+Date.now().toString(36), kind:'workout', workoutId:w.id, name:w.name, start:Date.now(), lastSetAt:null};
       try{ localStorage.setItem('mm_activeW', JSON.stringify(activeW)); }catch(e){}
       render(); window.scrollTo(0,0); toast('Workout started'); return true; }
     case 'wFinish': case 'wCancel': {
@@ -1706,8 +1740,8 @@ function train2Click(a, v, el){
       const n = (doc.sets||[]).filter(s=>s.wid===activeW.wid).length;
       if(a==='wFinish'){
         if(!n){ toast('Log at least one set, or discard'); return true; }
-        doc.sessions = (doc.sessions||[]).concat([{wid:activeW.wid, workoutId:activeW.workoutId, name:activeW.name, start:activeW.start, end:Date.now(), sets:n}]);
-        tDays[d] = doc; saveT(d); toast('Workout saved · '+n+' sets');
+        doc.sessions = (doc.sessions||[]).concat([{wid:activeW.wid, kind:activeW.kind||'workout', skillId:activeW.skillId||null, workoutId:activeW.workoutId||null, name:activeW.name, start:activeW.start, end:Date.now(), sets:n}]);
+        tDays[d] = doc; saveT(d); toast('Session saved · '+n+' sets');
       } else {
         if(!el.dataset.armed){ el.dataset.armed='1'; el.textContent = n ? `Tap again: delete ${n} sets` : 'Tap again to discard'; return true; }
         doc.sets = (doc.sets||[]).filter(s=>s.wid!==activeW.wid); tDays[d]=doc; saveT(d); toast('Workout discarded');
@@ -1717,6 +1751,125 @@ function train2Click(a, v, el){
   }
   return false;
 }
+/* ============ train: streetlift + skill sessions ============ */
+const LIFTS = [['l:pull','Weighted pull-up',true],['l:dip','Weighted dip',true],['l:squat','Squat',false]];
+const fmtMS = s => { s = Math.max(0, Math.round(+s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const parseMS = t => { t = String(t||'').trim(); if(!t) return null; if(t.includes(':')){ const [m,s] = t.split(':').map(Number); return (m||0)*60+(s||0); } return Math.round(+t*60) || null; };
+function bodyweight(){ const w = weighins(todayISO()).slice(-1)[0]; return w ? w.weight : null; }
+function e1rm(load, reps){ if(!load || !reps) return null; return reps===1 ? load : load*(1+reps/30); }
+function liftE1(set, bwKg){ const bw = set.ex!=='l:squat'; const load = (bw ? (bwKg||0) : 0) + (set.kg||0); const e = e1rm(load, set.reps); return e==null ? null : e - (bw ? (bwKg||0) : 0); }
+function saveActive(){ try{ localStorage.setItem('mm_activeW', JSON.stringify(activeW)); }catch(e){} }
+function sessionSets(){ if(!activeW) return []; return (tDoc(iso(new Date(activeW.start))).sets||[]).filter(s=>s.wid===activeW.wid); }
+function liftSessions(){ return Object.keys(tDays).sort().flatMap(d => (tDays[d].sessions||[]).filter(s=>s.kind==='lift').map(s=>({...s, date:d}))); }
+function topWork(sets){ const w = sets.filter(s=>!s.warm); if(!w.length) return null; return w.reduce((b,s)=> (s.kg||0)>(b.kg||0) || ((s.kg||0)===(b.kg||0) && (s.reps||0)>(b.reps||0)) ? s : b); }
+const kgTxt = (s, bw) => (bw && s.kg ? '+' : '') + (s.kg||0) + ' kg';
+
+function restBlock(){
+  const opts = [0,120,180,240,300,420];
+  return `<div class="restbox"><div><div class="rb-l">Rest</div><div class="rb-t" id="restClock">${activeW.lastSetAt ? fmtMS((Date.now()-activeW.lastSetAt)/1000) : '–:––'}</div></div>
+    <div class="rb-a"><div class="rb-l">Alarm</div><div class="chips" style="margin:4px 0 0">${opts.map(o=>`<button class="chip ${ (activeW.restAlarm||0)===o?'on':''}" data-act="restAlarm" data-v="${o}">${o?fmtMS(o):'off'}</button>`).join('')}</div></div></div>`;
+}
+function viewLift(){
+  const bwKg = bodyweight();
+  if(activeW && activeW.kind==='lift'){
+    const sets = sessionSets();
+    return card(`<div class="title sm">Streetlift session <span class="tag">live</span></div>
+      <p class="muted" style="margin-top:0">Started ${new Date(activeW.start).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})} · ${sets.length} set${sets.length===1?'':'s'}</p>
+      ${restBlock()}
+      ${LIFTS.map(([key,name,bw])=>{ const ls = sets.filter(s=>s.ex===key);
+        return `<div class="lift"><div class="lf-h"><b>${name}</b>${ls.length?`<span>${ls.filter(s=>!s.warm).length} work · ${ls.filter(s=>s.warm).length} warm-up</span>`:''}</div>
+          ${ls.length?`<table class="lt"><tr><th>#</th><th>Type</th><th class="num">kg</th><th class="num">Reps</th><th class="num">Rest</th><th></th></tr>
+            ${ls.map((s,i)=>`<tr class="${s.warm?'wu':''}"><td>${i+1}</td><td>${s.warm?'Warm-up':'<b>Work</b>'}</td><td class="num">${kgTxt(s,bw)}</td><td class="num">${s.reps||0}</td><td class="num">${s.rest!=null?fmtMS(s.rest):'–'}</td>
+              <td><button class="ldel" data-act="lDel" data-v="${s.id}">×</button></td></tr>`).join('')}</table>`:''}
+          <div class="row" style="margin-top:8px"><button class="btn ghost" style="padding:11px;font-size:12px" data-act="lAdd" data-v="${key}" data-warm="1">+ Warm-up</button><button class="btn ind" style="padding:11px;font-size:12px" data-act="lAdd" data-v="${key}" data-warm="0">+ Work set</button></div></div>`; }).join('')}
+      <button class="btn gold" style="margin-top:12px" data-act="wFinish">Finish session</button>
+      <button class="btn red" data-act="wCancel">Discard</button>`, {vert:'今'});
+  }
+  const sessions = liftSessions();
+  const stats = LIFTS.map(([key,name,bw]) => {
+    const all = allSets(key), best = topWork(all);
+    const lastS = sessions.slice().reverse().find(se => (tDoc(se.date).sets||[]).some(s=>s.wid===se.wid && s.ex===key));
+    const lastTop = lastS ? topWork((tDoc(lastS.date).sets||[]).filter(s=>s.wid===lastS.wid && s.ex===key)) : null;
+    const e = all.filter(s=>!s.warm).map(s=>liftE1(s, bwKg)).filter(x=>x!=null);
+    const eMax = e.length ? Math.max(...e) : null;
+    const pts = sessions.map(se => topWork((tDoc(se.date).sets||[]).filter(s=>s.wid===se.wid && s.ex===key))).filter(Boolean).slice(-12);
+    let chart = '';
+    if(pts.length>1){ const W=300,H=60, mx=Math.max(...pts.map(p=>p.kg||0)), mn=Math.min(...pts.map(p=>p.kg||0)), rg=Math.max(1,mx-mn);
+      const xy = pts.map((p,i)=>[8+i*(W-16)/(pts.length-1), H-8-((p.kg||0)-mn)/rg*(H-20)]);
+      chart = `<svg viewBox="0 0 ${W} ${H}" class="chart"><polyline points="${xy.map(p=>p.map(n=>n.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="#5a48ff" stroke-width="2.5"/>${xy.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="#e7c44a"/>`).join('')}</svg>`; }
+    return `<div class="lift"><div class="lf-h"><b>${name}</b>${eMax?`<span>e1RM ${bw?'+':''}${Math.round(eMax*2)/2} kg</span>`:''}</div>
+      <div class="lstat"><div><small>Best work set</small><b>${best?`${kgTxt(best,bw)} × ${best.reps}`:'–'}</b></div><div><small>Last session</small><b>${lastTop?`${kgTxt(lastTop,bw)} × ${lastTop.reps}`:'–'}</b></div></div>${chart}</div>`;
+  }).join('');
+  return card(`<div class="title">Streetlift</div>
+      <p class="lead" style="margin-top:0">Pull-up, dip, squat. Warm-ups, work sets and the rest between them.</p>
+      <button class="btn gold" data-act="lStart" ${activeW?'disabled':''}>Start session</button>
+      ${activeW?`<p class="muted">Another session is running (${esc(activeW.name)}). Finish it first.</p>`:''}
+      ${stats}
+      <p class="muted">${bwKg?`e1RM is an estimate (Epley) on total load, using your latest morning weight (${r1(bwKg)} kg), shown as added weight.`:'Log a morning weight to see estimated 1RMs for pull-ups and dips.'}</p>`, {vert:'街', vertR:'継続は力'})
+    + (sessions.length ? card(`<div class="title sm">Sessions</div>${sessions.slice().reverse().slice(0,12).map(se=>{ const ss=(tDoc(se.date).sets||[]).filter(s=>s.wid===se.wid);
+        return `<div class="exrow" style="cursor:default"><div class="er-m"><div class="er-n">${esc(fmtDate(se.date))} · ${Math.max(1,Math.round((se.end-se.start)/60000))} min</div>
+          <div class="er-s">${LIFTS.map(([k,n,bw])=>{ const t=topWork(ss.filter(s=>s.ex===k)); return t?`${n.replace('Weighted ','')} ${kgTxt(t,bw)}×${t.reps}`:''; }).filter(Boolean).join(' · ')||'no work sets'}</div></div></div>`; }).join('')}`, {vert:'記録'}) : '');
+}
+
+function skillSessionCard(){
+  if(!(activeW && activeW.kind==='skill')){
+    return card(`<div class="title sm">Today's skill session</div>
+      <p class="muted" style="margin-top:0">Pick the skill you're working on, then log its steps and the accessories you do with it.</p>
+      <button class="btn gold" data-act="ssPick" ${activeW?'disabled':''}>Start skill session</button>
+      ${activeW?`<p class="muted">Another session is running (${esc(activeW.name)}).</p>`:''}`, {vert:'今日'});
+  }
+  const sk = skillList().find(s=>s.id===activeW.skillId) || {name:'Skill', steps:[]}, cur = skillCur(sk.id);
+  const sets = sessionSets();
+  const row = (key, name, sub, mode, isCur) => { const mine = sets.filter(s=>s.ex===key);
+    return `<div class="exrow ${isCur?'cur':''}" data-act="tLog" data-v="${esc(key)}" data-w="1"><div class="er-m"><div class="er-n">${esc(name)}</div><div class="er-s">${esc(sub)}</div>
+      ${mine.length?`<div class="gx-sets">${mine.map(s=>`<span class="gs">${fmtSet(s, mode)}</span>`).join('')}</div>`:''}</div><div class="${mine.length?'er-c':'er-p'}">${mine.length||'＋'}</div></div>`; };
+  return card(`<div class="title sm">${esc(sk.name)} session <span class="tag">live</span></div>
+    <p class="muted" style="margin-top:0">Started ${new Date(activeW.start).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})} · ${sets.length} set${sets.length===1?'':'s'}</p>
+    ${restBlock()}
+    <div class="fl" style="font-size:10px;letter-spacing:.3em;font-weight:800;color:var(--indigo);margin:12px 0 4px">PROGRESSION</div>
+    ${sk.steps.map((st,i)=>row('s:'+sk.id+':'+i, (i+1)+'. '+st[0], (st[1]==='hold'?'Hold':'Reps')+(cur===i?' · current step':''), st[1], cur===i)).join('')}
+    <div class="fl" style="font-size:10px;letter-spacing:.3em;font-weight:800;color:var(--indigo);margin:14px 0 4px">ACCESSORIES</div>
+    ${(activeW.items||[]).map(k=>{ const i=exInfo(k); return row(k, i.name, i.sub, i.mode, false); }).join('') || '<div class="empty" style="padding:6px">None added yet.</div>'}
+    <button class="btn ghost" style="margin-top:6px" data-act="ssAcc">+ Add accessory</button>
+    <button class="btn gold" style="margin-top:10px" data-act="wFinish">Finish session</button>
+    <button class="btn red" data-act="wCancel">Discard</button>`, {vert:'今'});
+}
+function liftSheet(){
+  const S = sheet;
+  if(S.type==='ssPick') return sheetWrap('Skill of the day', skillList().map(sk=>{ const c=skillCur(sk.id);
+      return `<div class="exrow" data-act="ssStart" data-v="${esc(sk.id)}"><div class="er-m"><div class="er-n">${esc(sk.name)}</div><div class="er-s">${c!=null?'Current: '+esc(sk.steps[c][0]):'No current step set'}</div></div><div class="er-p">›</div></div>`; }).join(''));
+  if(S.type==='ssAcc') return sheetWrap('Add accessory', Object.keys(MUSCLES).map(m=>`<div class="fl" style="font-size:10px;letter-spacing:.3em;font-weight:800;color:var(--indigo);margin:12px 0 4px;text-transform:uppercase">${m}</div>
+      <div class="chips">${accCatalog(m).map(e=>`<button class="chip ${(activeW.items||[]).includes(e.key)?'on':''}" data-act="ssAddAcc" data-v="${esc(e.key)}">${esc(e.name)}</button>`).join('')}</div>`).join(''));
+  return '';
+}
+function liftClick(a, v, el){
+  switch(a){
+    case 'lStart': if(activeW) return true;
+      activeW = {wid:'s'+Date.now().toString(36), kind:'lift', name:'Streetlift', start:Date.now(), lastSetAt:null, restAlarm:0}; saveActive(); render(); window.scrollTo(0,0); toast('Session started'); return true;
+    case 'lAdd': {
+      const warm = el.dataset.warm==='1', mine = sessionSets().filter(s=>s.ex===v), last = mine.slice(-1)[0] || topWork(allSets(v));
+      sheet = {type:'tLog', key:v, wid:activeW.wid, warm, kg: last ? last.kg : null, reps: last ? last.reps : null,
+               rest: mine.length || sessionSets().length ? (activeW.lastSetAt ? Math.round((Date.now()-activeW.lastSetAt)/1000) : null) : null};
+      renderSheet(); return true; }
+    case 'lWarm': sheet.warm = v==='1'; tReadKg(); const r=$('#tRepIn'); if(r) sheet.reps=+r.value||null; const rs=$('#tRestIn'); if(rs) sheet.rest=parseMS(rs.value); renderSheet(); return true;
+    case 'lDel': { const d = iso(new Date(activeW.start)), doc = tDoc(d); doc.sets = (doc.sets||[]).filter(s=>s.id!==v); tDays[d]=doc; saveT(d); keepScroll(()=>render()); return true; }
+    case 'restAlarm': activeW.restAlarm = Number(v); activeW._alarmed = false; saveActive(); document.querySelectorAll('[data-act=restAlarm]').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+      try{ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); audioCtx.resume(); }catch(e){} return true;
+    case 'ssPick': sheet = {type:'ssPick'}; renderSheet(); return true;
+    case 'ssStart': { const sk = skillList().find(s=>s.id===v); if(!sk || activeW) return true;
+      activeW = {wid:'s'+Date.now().toString(36), kind:'skill', skillId:sk.id, name:sk.name+' session', start:Date.now(), lastSetAt:null, restAlarm:0, items:[]};
+      saveActive(); closeSheet(); render(); window.scrollTo(0,0); toast('Session started'); return true; }
+    case 'ssAcc': sheet = {type:'ssAcc'}; renderSheet(); return true;
+    case 'ssAddAcc': { activeW.items = activeW.items || []; const i = activeW.items.indexOf(v); if(i>=0) activeW.items.splice(i,1); else activeW.items.push(v); saveActive(); renderSheet(); keepScroll(()=>render()); return true; }
+  }
+  return false;
+}
+setInterval(()=>{
+  const el = document.getElementById('restClock'); if(!el || !activeW || !activeW.lastSetAt) return;
+  const s = (Date.now()-activeW.lastSetAt)/1000; el.textContent = fmtMS(s);
+  if(activeW.restAlarm && s>=activeW.restAlarm && !activeW._alarmed){ activeW._alarmed = true; el.classList.add('due'); beep(); setTimeout(beep, 700); }
+  if(activeW.restAlarm && s<activeW.restAlarm) el.classList.remove('due');
+}, 500);
 /* ============ photo ============ */
 function loadImg(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
 function resize(img, max, q){
@@ -1813,7 +1966,7 @@ document.addEventListener('click', e=>{
       profile=null; days={}; foodDays={}; gtgDays={}; tDays={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
     case 'fcat': foodCat=v; foodQ=''; render(); break;
     case 'fsel': foodSel = foodSel===v?null:v; keepScroll(()=>render()); break;
-    default: if(!appClick(a, v) && !trainClick(a, v) && !train2Click(a, v, el)) fuelClick(a, v, el);
+    default: if(!appClick(a, v) && !trainClick(a, v) && !train2Click(a, v, el) && !liftClick(a, v, el)) fuelClick(a, v, el);
   }
 });
 document.addEventListener('change', e=>{
