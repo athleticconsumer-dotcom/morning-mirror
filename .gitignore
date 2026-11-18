@@ -2,5 +2,6 @@
 *.jpeg
 *.png
 *.heic
+!icons/*.png
 export*.json
 .DS_Store
