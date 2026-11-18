@@ -10,5 +10,8 @@ export const firebaseConfig = {
 
   // Photo meal analysis (Firebase AI Logic). Paste your reCAPTCHA Enterprise site key here (see README).
   appCheckSiteKey: "",
-  aiModel: "gemini-3.5-flash"
+  aiModel: "gemini-3.5-flash",
+
+  // Reminders: Firebase → Projekteinstellungen → Cloud Messaging → Web-Push-Zertifikate → key pair (public key)
+  vapidKey: ""
 };

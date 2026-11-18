@@ -26,3 +26,15 @@ Barcode scanning, food list and manual entry work without this. For the "Photo m
 3. Paste the same key into `appCheckSiteKey` in `firebase-config.js`.
 
 Food data per user is stored in `users/{uid}/entries/f-YYYY-MM-DD` (same private rules).
+
+## App + reminders
+The site is an installable app (PWA): Android Chrome menu → Install app. iPhone: Safari → Share → Add to Home Screen.
+
+Reminders (morning check-in, evening food log) are sent by `.github/workflows/notify.yml` every 15 min. Setup:
+1. Firebase → Projekteinstellungen → Cloud Messaging → Web-Push-Zertifikate → Schlüsselpaar generieren. Put the public key into `vapidKey` in `firebase-config.js`.
+2. Firebase → Projekteinstellungen → Dienstkonten → Neuen privaten Schlüssel generieren (downloads a JSON file).
+3. GitHub repo → Settings → Secrets and variables → Actions → New repository secret: name `FIREBASE_SERVICE_ACCOUNT`, value = the whole JSON file content. Never commit this file.
+4. Publish the updated `firestore.rules` (adds the `push/{uid}` doc).
+5. In the app: Plan → Reminders → Turn on reminders.
+
+Note: GitHub pauses scheduled workflows after 60 days without commits. If that happens, re-enable it under Actions → Reminders.

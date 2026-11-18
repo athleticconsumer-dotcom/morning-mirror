@@ -1,0 +1,24 @@
+name: Reminders
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+concurrency: { group: reminders, cancel-in-progress: false }
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Install
+        working-directory: scripts
+        run: npm install --no-audit --no-fund
+      - name: Send reminders
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then echo "Secret FIREBASE_SERVICE_ACCOUNT missing, skipping."; exit 0; fi
+          node notify.mjs

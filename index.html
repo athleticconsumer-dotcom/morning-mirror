@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Morning Mirror</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e0c2b">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mirror">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&family=Noto+Serif+JP:wght@500&family=Oswald:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -430,11 +438,11 @@ async function connect(){
     auth.onAuthStateChanged(au, user=>{
       if(unsub){ unsub(); unsub=null; }
       if(!user){
-        uid=null; mode='local'; col=null; loadLocal();
+        uid=null; push=null; ntDraft=null; mode='local'; col=null; loadLocal();
         btn.textContent='Sign in with Google'; setSync('Not signed in<br><small>saved on this device only</small>'); render(); return;
       }
       uid=user.uid; btn.textContent='Sign out';
-      subscribe();
+      subscribe(); loadPush();
     });
   }catch(e){ setSync('Saved on this device<br><small>cloud unavailable</small>'); }
 }
@@ -712,6 +720,8 @@ function viewPlan(){
     ${changing?`<div class="warnline">Your current actions are only ${dsc} days old. Small tweaks are fine, but changing the whole system before 3 weeks means you never learn what worked.</div>`:''}
     <button class="btn gold" style="margin-top:10px" data-act="savePicks">Save actions</button>
   `, {vert:'選択'})}
+  ${installCard()}
+  ${notifCard()}
   ${rulesCard()}
   ${card(`<div class="title sm">Settings & data</div>
     <div class="field"><span class="fl">Goal</span>
@@ -1108,6 +1118,114 @@ function fuelInput(e){
 }
 $('#sheet').addEventListener('click', e=>{ if(e.target.id==='sheet') closeSheet(); });
 
+/* ============ app: install + notifications ============ */
+let installEvt = null, push = null, ntDraft = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if(tab==='plan') keepScroll(()=>render()); });
+addEventListener('appinstalled', () => { installEvt = null; toast('Installed. Open it from your home screen'); if(tab==='plan') render(); });
+function hashTab(){ const h = location.hash.slice(1); if(['today','progress','plan','fuel','food'].includes(h)){ tab = h; render(); } }
+addEventListener('hashchange', hashTab);
+
+async function loadPush(){
+  if(!fb || !uid) return;
+  try{ const s = await fb.fs.getDoc(fb.fs.doc(fb.db, 'push', uid)); push = s.exists() ? s.data() : null; }catch(e){ push = null; }
+  if(push && push.enabled && 'Notification' in window && Notification.permission==='granted') listenForeground();
+  if(tab==='plan') keepScroll(()=>render());
+}
+async function messagingMod(){ return import(`https://www.gstatic.com/firebasejs/${FB_V}/firebase-messaging.js`); }
+let fgBound = false;
+async function listenForeground(){
+  if(fgBound) return; fgBound = true;
+  try{ const m = await messagingMod(); m.onMessage(m.getMessaging(fb.app), p => { const d = p.data||{}; toast((d.title?d.title+': ':'')+(d.body||'')); }); }catch(e){}
+}
+function ntValues(){
+  const g = id => $(id);
+  return { morning: (g('#ntM')||{}).value || '07:30', evening: (g('#ntE')||{}).value || '20:30',
+           morningOn: ntDraft ? ntDraft.morningOn : true, eveningOn: ntDraft ? ntDraft.eveningOn : true,
+           tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Zurich' };
+}
+async function savePush(extra){
+  const data = {...ntValues(), ...extra, updatedAt: Date.now()};
+  await fb.fs.setDoc(fb.fs.doc(fb.db, 'push', uid), data, {merge:true});
+  push = {...(push||{}), ...data}; if(data.tokens) delete push.tokens;
+}
+async function enableNotifs(){
+  if(!fb || !uid){ toast('Sign in first'); return; }
+  if(!firebaseConfig.vapidKey){ toast('Web Push key missing in firebase-config.js'); return; }
+  const perm = await Notification.requestPermission();
+  if(perm !== 'granted'){ toast('Notifications blocked. Allow them in the browser settings'); render(); return; }
+  try{
+    const m = await messagingMod();
+    if(!(await m.isSupported())){ toast('Push not supported in this browser'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await m.getToken(m.getMessaging(fb.app), {vapidKey: firebaseConfig.vapidKey, serviceWorkerRegistration: reg});
+    if(!token) throw new Error('no token');
+    localStorage.setItem('mm_push_token', token);
+    await savePush({enabled:true, tokens: fb.fs.arrayUnion(token)});
+    listenForeground(); keepScroll(()=>render()); toast('Reminders on');
+  }catch(e){ toast('Could not turn on reminders ('+String(e.code||e.message||e).slice(0,40)+')'); }
+}
+async function disableNotifs(){
+  try{
+    const t = localStorage.getItem('mm_push_token');
+    const m = await messagingMod(); await m.deleteToken(m.getMessaging(fb.app)).catch(()=>{});
+    await savePush({enabled:false, ...(t ? {tokens: fb.fs.arrayRemove(t)} : {})});
+    localStorage.removeItem('mm_push_token'); keepScroll(()=>render()); toast('Reminders off');
+  }catch(e){ toast('Could not turn off reminders'); }
+}
+async function testNotif(){
+  try{ const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('Morning check-in', {body:'This is what your reminder looks like.', icon:'./icons/icon-192.png', badge:'./icons/badge-96.png', tag:'test', data:{url:'./#today'}});
+  }catch(e){ toast('Test failed: '+String(e.message||e).slice(0,40)); }
+}
+
+function installCard(){
+  if(isStandalone()) return '';
+  let body;
+  if(installEvt) body = `<p class="lead" style="margin-top:0">Put Morning Mirror on your home screen: own icon, full screen, opens instantly, works offline.</p><button class="btn gold" data-act="install">Install app</button>`;
+  else if(isIOS) body = `<p class="lead" style="margin-top:0">On iPhone: open this page in <b>Safari</b>, tap <b>Share</b> → <b>Add to Home Screen</b>. Then open it from the icon. Reminders only work there.</p>`;
+  else body = `<p class="lead" style="margin-top:0">Open the browser menu (⋮) and tap <b>Install app</b> or <b>Add to Home screen</b>.</p>`;
+  return card(`<div class="title sm">Install the app</div>${body}`, {vert:'アプリ'});
+}
+function notifCard(){
+  const sup = 'Notification' in window && 'serviceWorker' in navigator;
+  const perm = sup ? Notification.permission : 'unsupported';
+  const on = !!(push && push.enabled && perm==='granted');
+  if(!ntDraft) ntDraft = {morningOn: push ? push.morningOn!==false : true, eveningOn: push ? push.eveningOn!==false : true};
+  const m = (push && push.morning) || '07:30', e = (push && push.evening) || '20:30';
+  let body;
+  if(!sup) body = `<p class="muted">${isIOS && !isStandalone() ? 'On iPhone, reminders work once the app is on your home screen (see above).' : 'This browser can\'t show notifications.'}</p>`;
+  else if(!fb) body = `<p class="muted">Reminders need the cloud connection. Check your internet and reload.</p>`;
+  else if(!uid) body = `<p class="muted">Sign in with Google first (top right). Reminders check whether you've already logged, so they only nag when needed.</p>`;
+  else {
+    body = `
+    ${perm==='denied' ? `<div class="warnline">Notifications are blocked for this site. Allow them in the browser's site settings, then come back.</div>` : ''}
+    <div class="check ${ntDraft.morningOn?'on':''}" data-act="ntTog" data-v="morningOn"><div class="bx">${ntDraft.morningOn?'✓':''}</div>
+      <div style="flex:1"><div class="ct">Morning check-in</div><div class="cd">Only if no photo or weight yet</div></div>
+      <input type="time" id="ntM" value="${m}" style="width:112px;padding:8px" onclick="event.stopPropagation()"></div>
+    <div class="check ${ntDraft.eveningOn?'on':''}" data-act="ntTog" data-v="eveningOn"><div class="bx">${ntDraft.eveningOn?'✓':''}</div>
+      <div style="flex:1"><div class="ct">Evening food log</div><div class="cd">Your kcal so far, or a nudge if empty</div></div>
+      <input type="time" id="ntE" value="${e}" style="width:112px;padding:8px" onclick="event.stopPropagation()"></div>
+    <p class="muted">Reminders can arrive up to ~15 minutes after the set time.</p>
+    ${on ? `<div class="row"><button class="btn gold" data-act="ntSave">Save times</button><button class="btn ghost" data-act="ntTest">Test</button></div>
+            <button class="btn red" style="margin-top:8px" data-act="ntOff">Turn reminders off</button>`
+         : `<button class="btn gold" data-act="ntOn" ${perm==='denied'?'disabled':''}>Turn on reminders</button>`}`;
+  }
+  return card(`<div class="title sm">Reminders ${on?'<span class="tag">on</span>':''}</div>${body}`, {vert:'通知'});
+}
+function appClick(a, v){
+  switch(a){
+    case 'install': if(installEvt){ installEvt.prompt(); installEvt.userChoice.finally(()=>{ installEvt=null; render(); }); } return true;
+    case 'ntTog': ntDraft[v] = !ntDraft[v]; { const el = document.querySelector(`[data-act=ntTog][data-v=${v}]`); el.classList.toggle('on', ntDraft[v]); el.querySelector('.bx').textContent = ntDraft[v]?'✓':''; } return true;
+    case 'ntOn': enableNotifs(); return true;
+    case 'ntOff': disableNotifs(); return true;
+    case 'ntSave': savePush({}).then(()=>toast('Times saved')).catch(()=>toast('Could not save')); return true;
+    case 'ntTest': testNotif(); return true;
+  }
+  return false;
+}
 /* ============ photo ============ */
 function loadImg(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
 function resize(img, max, q){
@@ -1204,7 +1322,7 @@ document.addEventListener('click', e=>{
       profile=null; days={}; foodDays={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
     case 'fcat': foodCat=v; foodQ=''; render(); break;
     case 'fsel': foodSel = foodSel===v?null:v; keepScroll(()=>render()); break;
-    default: fuelClick(a, v, el);
+    default: if(!appClick(a, v)) fuelClick(a, v, el);
   }
 });
 document.addEventListener('change', e=>{
@@ -1231,6 +1349,7 @@ function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
 
 /* ============ boot ============ */
 loadLocal();
+hashTab();
 render();
 connect();
 </script>
