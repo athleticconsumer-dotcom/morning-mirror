@@ -869,9 +869,8 @@ function viewFuel(){
   if(!profile) return `<div class="banner">FUEL</div>` + onboarding();
   const t = todayISO(), items = dayItems(fuelDate), T = totals(items), tg = profile.targets || null;
   const R = 50, C = 2*Math.PI*R, pct = tg && tg.kcal ? Math.min(1, T.kcal/tg.kcal) : 0;
-  const over = tg && tg.kcal && T.kcal > tg.kcal;
   const bar = (k,label) => { const goal = tg ? tg[k] : 0, v = T[k], w = goal ? Math.min(100, v/goal*100) : 0;
-    return `<div class="mbar"><div class="ml">${label}<span class="${goal&&v>goal*1.1?'over':''}">${r1(v)}${goal?' / '+goal:''} g</span></div><div class="mt"><i style="width:${w}%;background:${MCOL[k]}"></i></div></div>`; };
+    return `<div class="mbar"><div class="ml">${label}<span>${r1(v)}${goal?' / '+goal:''} g</span></div><div class="mt"><i style="width:${w}%;background:${MCOL[k]}"></i></div></div>`; };
   const rec = recentFoods();
   const sug = suggestTargets();
   return `
@@ -884,11 +883,11 @@ function viewFuel(){
   ${card(`
     <div class="fsum">
       <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="${R}" fill="none" stroke="#e3e0fb" stroke-width="11"/>
-        <circle cx="60" cy="60" r="${R}" fill="none" stroke="${over?'#e0475b':'#5a48ff'}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}"/></svg>
-        <div class="rt"><b class="${over?'over':''}">${fmt0(tg&&tg.kcal ? tg.kcal-T.kcal : T.kcal)}</b><span>${tg&&tg.kcal ? (over?'kcal over':'kcal left') : 'kcal eaten'}</span></div></div>
+        <circle cx="60" cy="60" r="${R}" fill="none" stroke="#5a48ff" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}"/></svg>
+        <div class="rt"><b>${fmt0(T.kcal)}</b><span>${tg&&tg.kcal ? 'of '+fmt0(tg.kcal)+' kcal' : 'kcal'}</span></div></div>
       <div class="mbars">${bar('p','Protein')}${bar('c','Carbs')}${bar('f','Fat')}</div>
     </div>
-    <p class="muted" style="margin:10px 0 0">Eaten <b>${fmt0(T.kcal)} kcal</b>${tg&&tg.kcal?` of ${fmt0(tg.kcal)}`:''}. ${tg?'':'Set your targets below.'}</p>
+    ${tg?'':`<p class="muted" style="margin:10px 0 0">Set your targets below.</p>`}
   `, {vert:'燃料'})}
   <div class="addgrid">
     <button class="addbtn c1" data-act="openAI"><span class="ai">📸</span><b>Photo meal</b><small>AI estimates portions and macros</small></button>
