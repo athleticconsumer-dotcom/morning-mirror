@@ -952,7 +952,7 @@ function viewFuel(){
 
 /* ---------- sheets ---------- */
 function closeSheet(){ stopScan(); if(typeof stopGtgTimer==='function') stopGtgTimer(); sheet = null; const el=$('#sheet'); el.classList.remove('show'); el.innerHTML=''; }
-function sheetWrap(title, inner){ const lb = sheet && /^(g|t|sk|acc|w|ss)/.test(sheet.type) ? 'T R A I N' : 'F U E L'; return `<div class="panel"><div class="label">${lb}</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
+function sheetWrap(title, inner){ const lb = sheet && /^(g|t|sk|acc|w|ss|imp)/.test(sheet.type) ? 'T R A I N' : 'F U E L'; return `<div class="panel"><div class="label">${lb}</div><div class="sh-top"><div class="title sm">${title}</div><button class="x" data-act="closeSheet">×</button></div>${inner}</div>`; }
 function mealChips(sel){ return `<div class="chips">${MEALS.map(m=>`<button class="chip ${sel===m?'on':''}" data-act="smeal" data-v="${m}">${m}</button>`).join('')}</div>`; }
 function resBoxes(v){ return `<div class="res" style="display:flex;gap:6px;margin-top:10px">
   <div style="flex:1;text-align:center;border-radius:10px;padding:8px 4px;color:#fff;font-family:Oswald;font-size:18px;background:var(--ink)">${fmt0(v.kcal)}<small style="display:block;font-family:Montserrat;font-size:9px;letter-spacing:.12em;opacity:.85">KCAL</small></div>
@@ -1025,6 +1025,7 @@ function renderSheet(){
   if(S.type==='gEdit' || S.type==='gLog') html = gtgSheet();
   if(['tLog','skOpen','skNew','accNew','wEdit'].includes(S.type)) html = train2Sheet();
   if(['ssPick','ssAcc'].includes(S.type)) html = liftSheet();
+  if(S.type==='impLift') html = importSheet();
   el.innerHTML = html; el.classList.add('show');
 }
 function listRows(q){
@@ -1620,7 +1621,7 @@ function viewWork(){
       : `<div class="empty">No workouts yet.</div>`}
     <button class="btn ghost" style="margin-top:10px" data-act="wNew">+ New workout</button>`, {vert:'練習'})
   + (hist.length ? card(`<div class="title sm">History</div>${hist.map(h=>`<div class="exrow"><div class="er-m"><div class="er-n">${esc(h.name)}</div>
-      <div class="er-s">${esc(fmtDate(h.date))} · ${Math.max(1,Math.round((h.end-h.start)/60000))} min · ${h.sets} set${h.sets===1?'':'s'}</div></div></div>`).join('')}`, {vert:'記録'}) : '');
+      <div class="er-s">${esc(fmtDate(h.date))} · ${h.imported?'from notes':Math.max(1,Math.round((h.end-h.start)/60000))+' min'} · ${h.sets} set${h.sets===1?'':'s'}</div></div></div>`).join('')}`, {vert:'記録'}) : '');
 }
 
 /* ---------- sheets ---------- */
@@ -1792,7 +1793,7 @@ function saveActive(){ try{ localStorage.setItem('mm_activeW', JSON.stringify(ac
 function sessionSets(){ if(!activeW) return []; return (tDoc(iso(new Date(activeW.start))).sets||[]).filter(s=>s.wid===activeW.wid); }
 function liftSessions(){ return Object.keys(tDays).sort().flatMap(d => (tDays[d].sessions||[]).filter(s=>s.kind==='lift').map(s=>({...s, date:d}))); }
 function topWork(sets){ const w = sets.filter(s=>!s.warm); if(!w.length) return null; return w.reduce((b,s)=> (s.kg||0)>(b.kg||0) || ((s.kg||0)===(b.kg||0) && (s.reps||0)>(b.reps||0)) ? s : b); }
-const kgTxt = (s, bw) => (bw && s.kg ? '+' : '') + (s.kg||0) + ' kg';
+const kgTxt = (s, bw) => bw && !s.kg ? 'BW' : (bw ? '+' : '') + (s.kg||0) + ' kg';
 
 function restBlock(){
   const opts = [0,120,180,240,300,420];
@@ -1832,12 +1833,12 @@ function viewLift(){
   }).join('');
   return card(`<div class="title">Streetlift</div>
       <p class="lead" style="margin-top:0">Pull-up, dip, squat. Warm-ups, work sets and the rest between them.</p>
-      <button class="btn gold" data-act="lStart" ${activeW?'disabled':''}>Start session</button>
+      <div class="row"><button class="btn gold" data-act="lStart" ${activeW?'disabled':''}>Start session</button><button class="btn ghost" data-act="impOpen">Import notes</button></div>
       ${activeW?`<p class="muted">Another session is running (${esc(activeW.name)}). Finish it first.</p>`:''}
       ${stats}
       <p class="muted">${bwKg?`e1RM is an estimate (Epley) on total load, using your latest morning weight (${r1(bwKg)} kg), shown as added weight.`:'Log a morning weight to see estimated 1RMs for pull-ups and dips.'}</p>`, {vert:'街', vertR:'継続は力'})
     + (sessions.length ? card(`<div class="title sm">Sessions</div>${sessions.slice().reverse().slice(0,12).map(se=>{ const ss=(tDoc(se.date).sets||[]).filter(s=>s.wid===se.wid);
-        return `<div class="exrow" style="cursor:default"><div class="er-m"><div class="er-n">${esc(fmtDate(se.date))} · ${Math.max(1,Math.round((se.end-se.start)/60000))} min</div>
+        return `<div class="exrow" style="cursor:default"><div class="er-m"><div class="er-n">${esc(fmtDate(se.date))} · ${se.imported?'from notes':Math.max(1,Math.round((se.end-se.start)/60000))+' min'}</div>
           <div class="er-s">${LIFTS.map(([k,n,bw])=>{ const t=topWork(ss.filter(s=>s.ex===k)); return t?`${n.replace('Weighted ','')} ${kgTxt(t,bw)}×${t.reps}`:''; }).filter(Boolean).join(' · ')||'no work sets'}</div></div></div>`; }).join('')}`, {vert:'記録'}) : '');
 }
 
@@ -1900,6 +1901,76 @@ setInterval(()=>{
   if(activeW.restAlarm && s>=activeW.restAlarm && !activeW._alarmed){ activeW._alarmed = true; el.classList.add('due'); beep(); setTimeout(beep, 700); }
   if(activeW.restAlarm && s<activeW.restAlarm) el.classList.remove('due');
 }, 500);
+/* ============ streetlift import (paste notes) ============ */
+const WEEKDAYS = [ // index = JS getDay()
+  ['воскрес','sunday','sonntag','dimanche'],['понедель','monday','montag','lundi'],['вторник','tuesday','dienstag','mardi'],
+  ['сред','wednesday','mittwoch','mercredi'],['четверг','thursday','donnerstag','jeudi'],['пятниц','friday','freitag','vendredi'],['суббот','saturday','samstag','samedi']];
+function guessDate(text){
+  const t = text.toLowerCase(), today = todayISO();
+  const m = t.match(/(\d{1,2})[.\/](\d{1,2})(?:[.\/](\d{2,4}))?/);
+  if(m){ const y = m[3] ? (m[3].length===2 ? 2000+ +m[3] : +m[3]) : parse(today).getFullYear(); const d = iso(new Date(y, +m[2]-1, +m[1])); if(d<=today) return d; }
+  for(let wd=0; wd<7; wd++) if(WEEKDAYS[wd].some(w=>t.includes(w))){ for(let i=0;i<7;i++){ const d = addDays(today,-i); if(parse(d).getDay()===wd) return d; } }
+  return addDays(today,-1);
+}
+function parseLiftText(text){
+  const out = []; let cur = null;
+  const norm = s => s.toLowerCase().replace(/[хx×*]/g,'x').replace(/кг|kgs?/g,'kg').replace(/,/g,'.').trim();
+  text.split(/\n+/).forEach(raw => {
+    const line = norm(raw); if(!line) return;
+    if(/турник|подтяг|pull|klimm/.test(line)) { cur = 'l:pull'; return; }
+    if(/брус|отжим|dip/.test(line)) { cur = 'l:dip'; return; }
+    if(/присед|squat|kniebeug/.test(line)) { cur = 'l:squat'; return; }
+    if(!cur) return;
+    let kg = null, sets = 1, reps = null, m;
+    if((m = line.match(/^(св|bw|body|кв|собств|eigengew|гриф|bar|stange)\D*?(?:(\d+)\s*x\s*)?x?\s*(\d+)\s*$/))){
+      kg = /гриф|bar|stange/.test(m[1]) ? 20 : 0; if(m[2]){ sets = +m[2]; } reps = +m[3];
+    } else if((m = line.match(/^\+?(\d+(?:\.\d+)?)\s*(?:kg)?\s*(\d+)\s*x\s*(\d+)/))){ kg = +m[1]; sets = +m[2]; reps = +m[3]; }
+    else if((m = line.match(/^\+?(\d+(?:\.\d+)?)\s*(?:kg)?\s*x\s*(\d+)/))){ kg = +m[1]; reps = +m[2]; }
+    else return;
+    if(!reps) return;
+    for(let i=0;i<Math.min(sets,20);i++) out.push({ex:cur, kg, reps, warm:false});
+  });
+  // warm-up = every set before the first heaviest set of that lift
+  LIFTS.forEach(([key]) => {
+    const ls = out.filter(s=>s.ex===key); if(!ls.length) return;
+    const mx = Math.max(...ls.map(s=>s.kg||0)); const first = ls.findIndex(s=>(s.kg||0)===mx);
+    ls.forEach((s,i)=>{ s.warm = i<first; });
+  });
+  return out;
+}
+function importSheet(){
+  const S = sheet, sets = S.sets || [];
+  const exists = S.date && liftSessions().some(se=>se.date===S.date);
+  return sheetWrap('Import session', `
+    <p class="muted" style="margin-top:0">Paste your notes exactly as you write them. Lift names in Russian, German or English; sets like <b>30кг х4</b>, <b>20кг 3х6</b>, <b>Св х3</b>, <b>Гриф х5</b>.</p>
+    <textarea id="impText" style="min-height:150px" placeholder="Турник&#10;Св х3&#10;15кг х2&#10;30кг х4&#10;20кг 3х6">${esc(S.text||'')}</textarea>
+    <button class="btn ind" style="margin-top:8px" data-act="impRead">Read notes</button>
+    ${sets.length ? `
+      <div class="field"><span class="fl">Date</span><input type="date" id="impDate" value="${S.date}" max="${todayISO()}"></div>
+      ${exists?`<div class="warnline">There's already a session saved on this day. Importing adds a second one.</div>`:''}
+      ${LIFTS.map(([key,name,bw])=>{ const ls = sets.map((s,i)=>({...s,i})).filter(s=>s.ex===key); if(!ls.length) return '';
+        return `<div class="lift"><div class="lf-h"><b>${name}</b><span>${ls.filter(s=>!s.warm).length} work · ${ls.filter(s=>s.warm).length} warm-up</span></div>
+          <table class="lt"><tr><th>#</th><th>Type <small>(tap)</small></th><th class="num">kg</th><th class="num">Reps</th></tr>
+          ${ls.map((s,j)=>`<tr class="${s.warm?'wu':''}"><td>${j+1}</td><td><button class="chip ${s.warm?'':'on'}" style="padding:3px 9px;font-size:11px" data-act="impTog" data-v="${s.i}">${s.warm?'Warm-up':'Work'}</button></td><td class="num">${kgTxt(s,bw)}</td><td class="num">${s.reps}</td></tr>`).join('')}</table></div>`; }).join('')}
+      <button class="btn gold" style="margin-top:8px" data-act="impSave">Save ${sets.length} sets</button>`
+    : (S.read ? `<div class="warnline">I couldn't find any sets. Start each lift with its name on its own line (Турник, Брусья, Присед), then one set per line.</div>` : '')}`);
+}
+function importClick(a, v){
+  switch(a){
+    case 'impOpen': sheet = {type:'impLift', text:'', sets:[]}; renderSheet(); return true;
+    case 'impRead': { const t = $('#impText').value; sheet.text = t; sheet.sets = parseLiftText(t); sheet.read = true; sheet.date = guessDate(t); renderSheet(); return true; }
+    case 'impTog': { const d=$('#impDate'); if(d) sheet.date = d.value; sheet.sets[+v].warm = !sheet.sets[+v].warm; renderSheet(); return true; }
+    case 'impSave': {
+      const d = ($('#impDate')||{}).value || sheet.date; if(!d || d>todayISO()){ toast('Pick a valid date'); return true; }
+      const wid = 'i'+Date.now().toString(36), base = parse(d).getTime() + 17*3600e3;
+      const doc = tDoc(d);
+      const recs = sheet.sets.map((s,i)=>({id:wid+'-'+i, ex:s.ex, kg:s.kg||null, reps:s.reps, warm:!!s.warm, bw:s.ex!=='l:squat', wid, t: base + i*180e3}));
+      doc.sets = (doc.sets||[]).concat(recs);
+      doc.sessions = (doc.sessions||[]).concat([{wid, kind:'lift', name:'Streetlift', start:base, end:base + recs.length*180e3, sets:recs.length, imported:true}]);
+      tDays[d] = doc; saveT(d); closeSheet(); trainSec='lift'; render(); toast(`Saved ${recs.length} sets for ${fmtDate(d)}`); return true; }
+  }
+  return false;
+}
 /* ============ photo ============ */
 function loadImg(url){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; }); }
 function resize(img, max, q){
@@ -1996,7 +2067,7 @@ document.addEventListener('click', e=>{
       profile=null; days={}; foodDays={}; gtgDays={}; tDays={}; confirmReset=false; saveLocal(); tab='today'; render(); toast('Everything deleted'); break; }
     case 'fcat': foodCat=v; foodQ=''; render(); break;
     case 'fsel': foodSel = foodSel===v?null:v; keepScroll(()=>render()); break;
-    default: if(!appClick(a, v) && !trainClick(a, v) && !train2Click(a, v, el) && !liftClick(a, v, el)) fuelClick(a, v, el);
+    default: if(!appClick(a, v) && !trainClick(a, v) && !train2Click(a, v, el) && !liftClick(a, v, el) && !importClick(a, v)) fuelClick(a, v, el);
   }
 });
 document.addEventListener('change', e=>{
