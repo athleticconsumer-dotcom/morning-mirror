@@ -265,6 +265,15 @@ table.lt tr.wu td{color:var(--ink2)}
 .gs.tot{background:var(--gold);color:var(--ink);padding-right:9px}
 .timer{font-family:Oswald;font-size:72px;font-weight:600;text-align:center;color:var(--indigo);margin:8px 0 10px;letter-spacing:.02em}
 /* ===== fuel ===== */
+.plan{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+.plan.used{border-color:var(--violet);background:#f4f2ff}
+.pl-h{display:flex;justify-content:space-between;align-items:baseline}
+.pl-h b{font-size:16px;font-weight:900;color:var(--indigo)}
+.pl-h span{font-family:Oswald;font-size:20px;font-weight:600}
+.pl-m{display:flex;gap:6px;margin:8px 0 6px}
+.pl-m span{flex:1;text-align:center;border-radius:8px;padding:4px;color:#fff;font-family:Oswald;font-size:13px}
+.pl-i{font-size:11.5px;color:var(--ink2);line-height:1.45}
+
 .fuelmini{display:flex;align-items:center;gap:10px;background:#ffffff10;border:1px solid #ffffff1c;border-radius:14px;padding:10px 12px;margin-top:10px;color:#fff;cursor:pointer}
 .fuelmini .fm-t{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#c5c0ff;font-weight:700;white-space:nowrap}
 .fuelmini .fm-b{flex:1;height:8px;border-radius:4px;background:#ffffff1f;overflow:hidden}
@@ -406,7 +415,7 @@ const FOODS = {
     ['Rice, raw',360,7,79,0.7,'Cheap, easy to digest'],['Rice, cooked',130,2.7,28,0.3,''],['Pasta, raw',355,12.5,72,1.5,''],
     ['Potatoes, boiled',87,1.9,20,0.1,'Very filling per calorie'],['Sweet potato, baked',90,2,21,0.2,''],['Oats',380,13,60,7,'Fibre, slow energy'],
     ['Wholegrain bread',250,10,41,3.5,''],['Couscous, raw',376,13,77,0.6,''],['Banana',89,1.1,23,0.3,'Pre-training classic'],
-    ['Apple',52,0.3,14,0.2,''],['Berries',50,0.7,12,0.3,'Low kcal, high volume'],['Kiwi',61,1.1,15,0.5,''],
+    ['Fruit (mixed)',55,0.7,13,0.3,'Average of apple, banana, berries, kiwi'],['Apple',52,0.3,14,0.2,''],['Berries',50,0.7,12,0.3,'Low kcal, high volume'],['Kiwi',61,1.1,15,0.5,''],
     ['Dates',282,2.5,75,0.4,'Fast carbs'],['Honey',304,0.3,82,0,''],['Sugar',400,0,100,0,'White / table sugar, 1 tsp ≈ 4 g']
   ],
   'Protein':[
@@ -857,6 +866,25 @@ function suggestTargets(){
   return {kcal, p, c, f};
 }
 
+const DAY_PLANS = [
+  {id:'day-a', name:'Day A', items:[['Salmon, raw',600],['Mixed vegetables',500],['Fruit (mixed)',250],['Rice, raw',150]]}
+];
+function planItems(p){
+  const all = Object.values(FOODS).flat();
+  return p.items.map(([n,g]) => { const f = all.find(x=>x[0]===n); const per100 = {kcal:f[1], p:f[2], c:f[3], f:f[4]};
+    return {name:n, grams:g, per100, ...scaleItem(per100, g), meal:p.name, src:'plan', plan:p.id}; });
+}
+function plansCard(){
+  const items = dayItems(fuelDate);
+  return card(`<div class="title sm">Planned days</div>
+    <p class="muted" style="margin-top:0">One tap logs the whole day with all macros.</p>
+    ${DAY_PLANS.map(p => { const it = planItems(p), T = totals(it), used = items.some(i=>i.plan===p.id);
+      return `<div class="plan ${used?'used':''}"><div class="pl-h"><b>${esc(p.name)}</b><span>${fmt0(T.kcal)} kcal</span></div>
+        <div class="pl-m"><span style="background:#3f4fd6">P ${Math.round(T.p)} g</span><span style="background:var(--gold);color:var(--ink)">C ${Math.round(T.c)} g</span><span style="background:#6f7591">F ${Math.round(T.f)} g</span></div>
+        <div class="pl-i">${it.map(i=>`${esc(i.name.replace(', raw',' (raw)'))} ${i.grams} g`).join(' · ')}</div>
+        ${used ? `<button class="btn ghost" style="padding:10px;margin-top:8px" data-act="planRm" data-v="${p.id}">✓ Logged · remove</button>`
+               : `<button class="btn ind" style="padding:11px;margin-top:8px" data-act="planUse" data-v="${p.id}">Log ${esc(p.name)} for ${fuelDate===todayISO()?'today':esc(fmtDate(fuelDate))}</button>`}</div>`; }).join('')}`, {vert:'献立'});
+}
 function fuelMini(){
   if(!profile) return '';
   const T = totals(dayItems(todayISO())), tg = profile.targets;
@@ -889,6 +917,7 @@ function viewFuel(){
     </div>
     ${tg?'':`<p class="muted" style="margin:10px 0 0">Set your targets below.</p>`}
   `, {vert:'燃料'})}
+  ${plansCard()}
   <div class="addgrid">
     <button class="addbtn c1" data-act="openAI"><span class="ai">📸</span><b>Photo meal</b><small>AI estimates portions and macros</small></button>
     <button class="addbtn c4" data-act="openScan"><span class="ai">▥</span><b>Scan barcode</b><small>Packaged food via Open Food Facts</small></button>
@@ -899,9 +928,9 @@ function viewFuel(){
     <div class="title sm">Meals</div>
     ${rec.length ? `<div class="fl" style="font-size:10px;letter-spacing:.3em;font-weight:700;color:var(--indigo)">QUICK RE-ADD</div>
       <div class="recent">${rec.map((r,i)=>`<button data-act="readd" data-v="${i}">${esc(r.name)} <span>${r.grams?Math.round(r.grams)+' g · ':''}${fmt0(r.kcal)}</span></button>`).join('')}</div>` : ''}
-    ${items.length ? MEALS.map(m => { const list = items.filter(i=>(i.meal||'Snacks')===m); if(!list.length) return '';
+    ${items.length ? MEALS.concat([...new Set(items.map(i=>i.meal).filter(m=>m && !MEALS.includes(m)))]).map(m => { const list = items.filter(i=>(i.meal||'Snacks')===m); if(!list.length) return '';
       return `<div class="meal"><h4>${m}<span>${fmt0(totals(list).kcal)} kcal</span></h4>${list.map(i=>`
-        <div class="fitem">${i.thumb?`<img src="${esc(i.thumb)}" alt="">`:`<div class="fi-ic">${{ai:'📸',barcode:'▥',list:'☰'}[i.src]||'✎'}</div>`}
+        <div class="fitem">${i.thumb?`<img src="${esc(i.thumb)}" alt="">`:`<div class="fi-ic">${{ai:'📸',barcode:'▥',list:'☰',plan:'★'}[i.src]||'✎'}</div>`}
           <div class="fi-m"><div class="fi-n">${esc(i.name)}</div><div class="fi-s">${i.grams?Math.round(i.grams)+' g · ':''}P ${r1(i.p)} · C ${r1(i.c)} · F ${r1(i.f)}</div></div>
           <div class="fi-k">${fmt0(i.kcal)}</div><button class="fi-x" data-act="fdel" data-v="${esc(i.id)}">×</button></div>`).join('')}</div>`; }).join('')
       : `<div class="empty">Nothing logged ${fuelDate===t?'today':'this day'} yet.</div>`}
@@ -1124,6 +1153,8 @@ If there is no food in the photo, return {"items":[],"confidence":"low","note":"
 /* ---------- events ---------- */
 function fuelClick(a, v, el){
   switch(a){
+    case 'planUse': { const p = DAY_PLANS.find(x=>x.id===v); if(!p) return; addItems(planItems(p)); keepScroll(()=>{}); toast(p.name+' logged'); break; }
+    case 'planRm': { const doc = foodDays[fuelDate]; if(!doc) return; doc.items = doc.items.filter(i=>i.plan!==v); saveFood(fuelDate); keepScroll(()=>render()); toast('Removed'); break; }
     case 'fday': { const nd = addDays(fuelDate, Number(v)); if(nd>todayISO()) return; fuelDate=nd; render(); break; }
     case 'openScan': openScanner(); break;
     case 'openList': sheet={type:'list', q:''}; renderSheet(); break;
