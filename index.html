@@ -1772,7 +1772,7 @@ function train2Click(a, v, el){
       const n = (doc.sets||[]).filter(s=>s.wid===activeW.wid).length;
       if(a==='wFinish'){
         if(!n){ toast('Log at least one set, or discard'); return true; }
-        doc.sessions = (doc.sessions||[]).concat([{wid:activeW.wid, kind:activeW.kind||'workout', skillId:activeW.skillId||null, workoutId:activeW.workoutId||null, name:activeW.name, start:activeW.start, end:Date.now(), sets:n, light:!!activeW.light}]);
+        doc.sessions = (doc.sessions||[]).concat([{wid:activeW.wid, kind:activeW.kind||'workout', skillId:activeW.skillId||null, workoutId:activeW.workoutId||null, name:activeW.name, start:activeW.start, end:Date.now(), sets:n}]);
         tDays[d] = doc; saveT(d); toast('Session saved · '+n+' sets');
       } else {
         if(!el.dataset.armed){ el.dataset.armed='1'; el.textContent = n ? `Tap again: delete ${n} sets` : 'Tap again to discard'; return true; }
@@ -1792,7 +1792,8 @@ function e1rm(load, reps){ if(!load || !reps) return null; return reps===1 ? loa
 function liftE1(set, bwKg){ const bw = set.ex!=='l:squat'; const load = (bw ? (bwKg||0) : 0) + (set.kg||0); const e = e1rm(load, set.reps); return e==null ? null : e - (bw ? (bwKg||0) : 0); }
 function saveActive(){ try{ localStorage.setItem('mm_activeW', JSON.stringify(activeW)); }catch(e){} }
 function sessionSets(){ if(!activeW) return []; return (tDoc(iso(new Date(activeW.start))).sets||[]).filter(s=>s.wid===activeW.wid); }
-function liftSessions(){ return Object.keys(tDays).sort().flatMap(d => (tDays[d].sessions||[]).filter(s=>s.kind==='lift').map(s=>({...s, date:d}))); }
+const isLightDay = d => parse(d).getDay()===3;  // Wednesday = light session
+function liftSessions(){ return Object.keys(tDays).sort().flatMap(d => (tDays[d].sessions||[]).filter(s=>s.kind==='lift').map(s=>({...s, date:d, light:isLightDay(d)}))); }
 function topWork(sets){ const w = sets.filter(s=>!s.warm); if(!w.length) return null; return w.reduce((b,s)=> (s.kg||0)>(b.kg||0) || ((s.kg||0)===(b.kg||0) && (s.reps||0)>(b.reps||0)) ? s : b); }
 const kgTxt = (s, bw) => bw && !s.kg ? 'BW' : (bw ? '+' : '') + (s.kg||0) + ' kg';
 
@@ -1805,8 +1806,7 @@ function viewLift(){
   const bwKg = bodyweight();
   if(activeW && activeW.kind==='lift'){
     const sets = sessionSets();
-    return card(`<div class="title sm">Streetlift session <span class="tag">live</span></div>
-      <div class="check ${activeW.light?'on':''}" data-act="lLiveLight" style="margin:6px 0"><div class="bx">${activeW.light?'✓':''}</div><div><div class="ct">Light session</div><div class="cd">Kept out of best sets, e1RM and the trend line</div></div></div>
+    return card(`<div class="title sm">Streetlift session <span class="tag">live</span></div>${isLightDay(iso(new Date(activeW.start)))?`<p class="muted" style="margin:0">Wednesday · counted as a <b>light session</b></p>`:''}
       <p class="muted" style="margin-top:0">Started ${new Date(activeW.start).toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})} · ${sets.length} set${sets.length===1?'':'s'}</p>
       ${restBlock()}
       ${LIFTS.map(([key,name,bw])=>{ const ls = sets.filter(s=>s.ex===key);
@@ -1847,8 +1847,7 @@ function viewLift(){
       <p class="muted">${bwKg?`e1RM is an estimate (Epley) on total load, using your latest morning weight (${r1(bwKg)} kg), shown as added weight.`:'Log a morning weight to see estimated 1RMs for pull-ups and dips.'}</p>`, {vert:'街', vertR:'継続は力'})
     + (sessions.length ? card(`<div class="title sm">Sessions</div>${sessions.slice().reverse().slice(0,12).map(se=>{ const ss=(tDoc(se.date).sets||[]).filter(s=>s.wid===se.wid);
         return `<div class="exrow ${se.light?'light':''}" style="cursor:default"><div class="er-m"><div class="er-n">${esc(fmtDate(se.date))} · ${se.imported?'from notes':Math.max(1,Math.round((se.end-se.start)/60000))+' min'}${se.light?' <span class="tag" style="background:#ececf3;color:var(--slate)">light</span>':''}</div>
-          <div class="er-s">${LIFTS.map(([k,n,bw])=>{ const t=topWork(ss.filter(s=>s.ex===k)); return t?`${n.replace('Weighted ','')} ${kgTxt(t,bw)}×${t.reps}`:''; }).filter(Boolean).join(' · ')||'no work sets'}</div></div>
-          <button class="chip ${se.light?'on':''}" style="flex:none;padding:6px 10px;font-size:11px" data-act="lLight" data-v="${esc(se.wid)}" data-d="${se.date}">${se.light?'✓ Light':'Light?'}</button></div>`; }).join('')}`, {vert:'記録'}) : '');
+          <div class="er-s">${LIFTS.map(([k,n,bw])=>{ const t=topWork(ss.filter(s=>s.ex===k)); return t?`${n.replace('Weighted ','')} ${kgTxt(t,bw)}×${t.reps}`:''; }).filter(Boolean).join(' · ')||'no work sets'}</div></div></div>`; }).join('')}`, {vert:'記録'}) : '');
 }
 
 function skillSessionCard(){
@@ -1884,10 +1883,8 @@ function liftSheet(){
 }
 function liftClick(a, v, el){
   switch(a){
-    case 'lLiveLight': activeW.light = !activeW.light; saveActive(); keepScroll(()=>render()); return true;
-    case 'lLight': { const d = el.dataset.d, doc = tDoc(d); doc.sessions = (doc.sessions||[]).map(se => se.wid===v ? {...se, light:!se.light} : se); tDays[d]=doc; saveT(d); keepScroll(()=>render()); return true; }
     case 'lStart': if(activeW) return true;
-      activeW = {wid:'s'+Date.now().toString(36), kind:'lift', name:'Streetlift', start:Date.now(), lastSetAt:null, restAlarm:0, light: new Date().getDay()===3}; saveActive(); render(); window.scrollTo(0,0); toast('Session started'); return true;
+      activeW = {wid:'s'+Date.now().toString(36), kind:'lift', name:'Streetlift', start:Date.now(), lastSetAt:null, restAlarm:0}; saveActive(); render(); window.scrollTo(0,0); toast('Session started'); return true;
     case 'lAdd': {
       const warm = el.dataset.warm==='1', mine = sessionSets().filter(s=>s.ex===v), last = mine.slice(-1)[0] || topWork(allSets(v));
       sheet = {type:'tLog', key:v, wid:activeW.wid, warm, kg: last ? last.kg : null, reps: last ? last.reps : null,
@@ -1963,15 +1960,14 @@ function importSheet(){
         return `<div class="lift"><div class="lf-h"><b>${name}</b><span>${ls.filter(s=>!s.warm).length} work · ${ls.filter(s=>s.warm).length} warm-up</span></div>
           <table class="lt"><tr><th>#</th><th>Type <small>(tap)</small></th><th class="num">kg</th><th class="num">Reps</th></tr>
           ${ls.map((s,j)=>`<tr class="${s.warm?'wu':''}"><td>${j+1}</td><td><button class="chip ${s.warm?'':'on'}" style="padding:3px 9px;font-size:11px" data-act="impTog" data-v="${s.i}">${s.warm?'Warm-up':'Work'}</button></td><td class="num">${kgTxt(s,bw)}</td><td class="num">${s.reps}</td></tr>`).join('')}</table></div>`; }).join('')}
-      <div class="check ${S.light?'on':''}" data-act="impLight" style="margin-top:8px"><div class="bx">${S.light?'✓':''}</div><div><div class="ct">Light session</div><div class="cd">Kept out of best sets, e1RM and the trend line</div></div></div>
+      ${isLightDay(S.date)?`<p class="muted">Wednesday · will count as a <b>light session</b></p>`:''}
       <button class="btn gold" style="margin-top:8px" data-act="impSave">Save ${sets.length} sets</button>`
     : (S.read ? `<div class="warnline">I couldn't find any sets. Start each lift with its name on its own line (Турник, Брусья, Присед), then one set per line.</div>` : '')}`);
 }
 function importClick(a, v){
   switch(a){
     case 'impOpen': sheet = {type:'impLift', text:'', sets:[]}; renderSheet(); return true;
-    case 'impRead': { const t = $('#impText').value; sheet.text = t; sheet.sets = parseLiftText(t); sheet.read = true; sheet.date = guessDate(t); sheet.light = parse(sheet.date).getDay()===3; renderSheet(); return true; }
-    case 'impLight': { const d=$('#impDate'); if(d) sheet.date = d.value; sheet.light = !sheet.light; renderSheet(); return true; }
+    case 'impRead': { const t = $('#impText').value; sheet.text = t; sheet.sets = parseLiftText(t); sheet.read = true; sheet.date = guessDate(t); renderSheet(); return true; }
     case 'impTog': { const d=$('#impDate'); if(d) sheet.date = d.value; sheet.sets[+v].warm = !sheet.sets[+v].warm; renderSheet(); return true; }
     case 'impSave': {
       const d = ($('#impDate')||{}).value || sheet.date; if(!d || d>todayISO()){ toast('Pick a valid date'); return true; }
@@ -1979,7 +1975,7 @@ function importClick(a, v){
       const doc = tDoc(d);
       const recs = sheet.sets.map((s,i)=>({id:wid+'-'+i, ex:s.ex, kg:s.kg||null, reps:s.reps, warm:!!s.warm, bw:s.ex!=='l:squat', wid, t: base + i*180e3}));
       doc.sets = (doc.sets||[]).concat(recs);
-      doc.sessions = (doc.sessions||[]).concat([{wid, kind:'lift', name:'Streetlift', start:base, end:base + recs.length*180e3, sets:recs.length, imported:true, light:!!sheet.light}]);
+      doc.sessions = (doc.sessions||[]).concat([{wid, kind:'lift', name:'Streetlift', start:base, end:base + recs.length*180e3, sets:recs.length, imported:true}]);
       tDays[d] = doc; saveT(d); closeSheet(); trainSec='lift'; render(); toast(`Saved ${recs.length} sets for ${fmtDate(d)}`); return true; }
   }
   return false;
