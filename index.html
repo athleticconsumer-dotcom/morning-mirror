@@ -417,7 +417,7 @@ const FOODS = {
     ['Potatoes, boiled',87,1.9,20,0.1,'Very filling per calorie'],['Sweet potato, baked',90,2,21,0.2,''],['Oats',380,13,60,7,'Fibre, slow energy'],
     ['Wholegrain bread',250,10,41,3.5,''],['Couscous, raw',376,13,77,0.6,''],['Banana',89,1.1,23,0.3,'Pre-training classic'],
     ['Fruit (mixed)',55,0.7,13,0.3,'Average of apple, banana, berries, kiwi'],['Apple',52,0.3,14,0.2,''],['Berries',50,0.7,12,0.3,'Low kcal, high volume'],['Strawberries',32,0.7,7.7,0.3,''],['Kiwi',61,1.1,15,0.5,''],
-    ['Dates',282,2.5,75,0.4,'Fast carbs'],['Dried figs',249,3.3,64,0.9,'High fibre'],['Honey',304,0.3,82,0,''],['Sugar',400,0,100,0,'White / table sugar, 1 tsp ≈ 4 g']
+    ['Dates',282,2.5,75,0.4,'Fast carbs'],['Dried figs',249,3.3,64,0.9,'High fibre'],['Marshmallows',318,1.8,81,0.2,'Fast carbs'],['Honey',304,0.3,82,0,''],['Sugar',400,0,100,0,'White / table sugar, 1 tsp ≈ 4 g']
   ],
   'Protein':[
     ['Chicken breast, raw',110,23,0,1.5,'Lean staple'],['Turkey breast, raw',104,24,0,1,''],['Whole chicken, roasted',239,27,0,14,'Meat + skin, weigh without bones'],['Whole chicken, raw',215,19,0,15,'Meat + skin, weigh without bones'],['Sucuk',450,21,1.5,40,'Beef sucuk, varies by brand'],['Beef 5% fat, raw',125,21,0,5,'Iron, zinc'],
@@ -434,7 +434,7 @@ const FOODS = {
   'Extras':[
     ['Milk 1.5%',47,3.4,4.8,1.5,''],['Coffee, black',2,0.1,0,0,''],['Coconut water',19,0.7,3.7,0.2,''],
     ['Soy sauce',53,8,5,0.6,'Salty: water weight next day'],['Ketchup',112,1.2,26,0.1,''],['Hummus',166,8,14,10,''],
-    ['Mixed vegetables',30,2,5,0.3,'Eat freely']
+    ['Mixed vegetables',30,2,5,0.3,'Eat freely'],['Frozen vegetables (mixed)',60,3,9,0.5,'Peas, carrots, beans, corn mix']
   ]
 };
 
@@ -868,7 +868,8 @@ function suggestTargets(){
 }
 
 const DAY_PLANS = [
-  {id:'day-a', name:'Day A', items:[['Salmon, raw',600],['Mixed vegetables',500],['Fruit (mixed)',250],['Rice, raw',150]]}
+  {id:'day-a', name:'Day A', items:[['Salmon, raw',600],['Mixed vegetables',500],['Fruit (mixed)',250],['Rice, raw',150]]},
+  {id:'day-b', name:'Day B · training', items:[['Marshmallows',200],['Chicken breast, raw',600],['Frozen vegetables (mixed)',500],['Walnuts',60]]}
 ];
 function planItems(p){
   const all = Object.values(FOODS).flat();
