@@ -696,6 +696,7 @@ function viewToday(){
     ${acts.length ? acts.map(a=>`<div class="check ${draft.done.includes(a.id)?'on':''}" data-act="done" data-v="${a.id}"><div class="bx">${draft.done.includes(a.id)?'✓':''}</div><div><div class="ct">${esc(a.t)}</div></div></div>`).join('')
       : `<p class="muted">${diffDays(profile.startDate,t)<7?'Setup week: no actions yet. Just observe.':'No actions chosen yet. Pick them in the Plan tab.'}</p>`}
     <div class="field"><span class="fl">Steps yesterday (optional)</span><input type="number" inputmode="numeric" id="stepsIn" placeholder="e.g. 9500" value="${draft.steps??''}"></div>
+    <div class="check ${draft.fasting?'on':''}" data-act="fasting"><div class="bx">${draft.fasting?'✓':''}</div><div><div class="ct">Fasting day</div><div class="cd">Marked on the weight chart, so you can see how fasting days move the scale.</div></div></div>
     <div class="check ${draft.excused?'on':''}" data-act="excused"><div class="bx">${draft.excused?'✓':''}</div><div><div class="ct">Excused day</div><div class="cd">Travel, illness, a celebration, a big salty meal. Weight is kept out of the trend.</div></div></div>
     <div class="field"><span class="fl">Note</span><textarea id="noteIn" placeholder="Anything that explains today's number…">${esc(draft.note)}</textarea></div>
     <button class="btn gold" data-act="save">${exists?'Update check-in':'Save check-in'}</button>
@@ -727,9 +728,9 @@ function chartSVG(){
   for(let i=0;i<=4;i++){ const w = lo + (hi-lo)*i/4; g += `<line x1="${L}" x2="${W-R}" y1="${y(w)}" y2="${y(w)}" stroke="#e1defa"/><text x="${L-5}" y="${y(w)+3}" font-size="9" text-anchor="end" fill="#6b6894" font-family="Oswald">${r1(w)}</text>`; }
   g += `<text x="${L}" y="${H-6}" font-size="9" fill="#6b6894">${esc(fmtDate(startR,{day:'numeric',month:'short'}))}</text><text x="${W-R}" y="${H-6}" font-size="9" text-anchor="end" fill="#6b6894">${esc(fmtDate(t,{day:'numeric',month:'short'}))}</text>`;
   const line = avgs.map(a=>`${x(a[0]).toFixed(1)},${y(a[1]).toFixed(1)}`).join(' ');
-  const dots = pts.map(p=>`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="3" fill="${p.excused?'#fff':'#8f86ff'}" stroke="#5a48ff" stroke-width="${p.excused?1.5:0}"/>`).join('');
+  const dots = pts.map(p=>`${p.fasting?`<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="6" fill="none" stroke="#e7c44a" stroke-width="2"/>`:''}<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="3" fill="${p.excused?'#fff':'#8f86ff'}" stroke="#5a48ff" stroke-width="${p.excused?1.5:0}"/>`).join('');
   return `<svg class="chart" viewBox="0 0 ${W} ${H}">${g}${avgs.length>1?`<polyline points="${line}" fill="none" stroke="#e7c44a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`:''}${dots}</svg>
-    <div class="legend"><span><i style="background:#8f86ff"></i>Daily weight</span><span><i style="background:#e7c44a"></i>5-day average</span><span>○ excused</span></div>`;
+    <div class="legend"><span><i style="background:#8f86ff"></i>Daily weight</span><span><i style="background:#e7c44a"></i>5-day average</span><span>○ excused</span><span style="color:#b8941f">◎ fasting</span></div>`;
 }
 
 function viewProgress(){
@@ -2040,6 +2041,7 @@ document.addEventListener('click', e=>{
     case 'done': {
       syncInputs(); const i = draft.done.indexOf(v); i>=0 ? draft.done.splice(i,1) : draft.done.push(v); dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break; }
     case 'excused': syncInputs(); draft.excused=!draft.excused; dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break;
+    case 'fasting': syncInputs(); draft.fasting=!draft.fasting; dirty=true; keepScroll(()=>$('#view').innerHTML=viewToday()); break;
     case 'save': {
       syncInputs();
       if(!draft.weight && !photoSrc(draft)){ toast('Add a weight or a photo first'); return; }
